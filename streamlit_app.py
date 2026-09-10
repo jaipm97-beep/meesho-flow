@@ -28,6 +28,17 @@ TRENDS_CACHE_FILE = os.path.join(BASE_DIR, "daily_trends_cache.json")
 
 load_dotenv(ENV_PATH, override=True)
 
+def get_safe_secret(key: str, default: str = "") -> str:
+    """Safely retrieves a secret from st.secrets without raising StreamlitSecretNotFoundError."""
+    try:
+        if hasattr(st, "secrets") and key in st.secrets:
+            val = st.secrets[key]
+            if val:
+                return str(val)
+    except Exception:
+        pass
+    return default
+
 # ---------------------------------------------------------
 # Streamlit Page Config & Custom Styling
 # ---------------------------------------------------------
@@ -1527,7 +1538,9 @@ def generate_fashion_stylist_script(
     creator_personality: str = "🌸 Cute & Friendly Bestie",
     audience_persona: str = "🎓 College Fresher on Budget",
     hook_archetype: str = "🎯 AI Auto-Pick",
-    api_key: str = None
+    api_key: str = None,
+    affiliate_link: str = "",
+    **kwargs
 ) -> str:
     """
     Elite Influencer Script Agent & Retention Engine (MASTER PROMPT Section 20, 19, 18, 15B).
@@ -2462,7 +2475,9 @@ def generate_batch_haul_script(
     language: str,
     creator_bytes=None,
     api_key=None,
-    include_on_screen_text=False
+    include_on_screen_text=False,
+    affiliate_link="",
+    **kwargs
 ):
     if not api_key:
         return "⚠️ **Gemini API Key Required**: Please enter your Gemini API Key in the sidebar or save it in `.env` to generate live batch haul scripts."
@@ -2602,7 +2617,7 @@ MANDATORY HAUL OUTPUT STRUCTURE:
 
 
 def generate_problem_solver_script(
-    duration, language, voice_tone, problem_data, price, meesho_code, background_preset_desc="", creator_bytes=None, product_bytes=None, api_key=None, story_angle="😆 Funny & Relatable Gossip", include_on_screen_text=False, brand_dupe_info=None
+    duration, language, voice_tone, problem_data, price, meesho_code, background_preset_desc="", creator_bytes=None, product_bytes=None, api_key=None, story_angle="😆 Funny & Relatable Gossip", include_on_screen_text=False, brand_dupe_info=None, affiliate_link="", **kwargs
 ):
     bg_lock = background_preset_desc if background_preset_desc else "Minimalist warm ivory limewash wall, light natural oak floor, sheer white curtains, diffused afternoon daylight"
     
@@ -3003,8 +3018,8 @@ with st.sidebar:
     
     # API Key Configuration
     env_key = os.getenv("GEMINI_API_KEY", "")
-    if not env_key and hasattr(st, "secrets") and "GEMINI_API_KEY" in st.secrets:
-        env_key = st.secrets["GEMINI_API_KEY"]
+    if not env_key:
+        env_key = get_safe_secret("GEMINI_API_KEY", "")
     masked_key = f"{env_key[:4]}...{env_key[-4:]}" if len(env_key) > 8 else ""
     
     if env_key:
@@ -3991,7 +4006,7 @@ elif st.session_state["active_nav_tab"] == NAV_STUDIO:
         generate_clicked = st.button("🚀 Generate Complete Production (Script + Flow Prompts + Launch Kit)", type="primary", use_container_width=True)
     
     with col_info:
-        active_key = custom_key.strip() if 'custom_key' in locals() and custom_key.strip() else (os.getenv("GEMINI_API_KEY", "") or (st.secrets["GEMINI_API_KEY"] if hasattr(st, "secrets") and "GEMINI_API_KEY" in st.secrets else ""))
+        active_key = custom_key.strip() if 'custom_key' in locals() and custom_key.strip() else (os.getenv("GEMINI_API_KEY", "") or get_safe_secret("GEMINI_API_KEY", ""))
         if not active_key:
             st.warning("⚠️ Please add a Gemini API Key in the sidebar to enable video generation.")
         else:
