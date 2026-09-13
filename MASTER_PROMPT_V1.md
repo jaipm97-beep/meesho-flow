@@ -983,6 +983,156 @@ To eliminate the uncanny valley where voice is heard while the creator's mouth r
 4. **Creator Affiliate Link in Auto-DM**:
    - The Auto-DM response must prioritize the creator's real affiliate link or live Meesho search link, replacing generic `[INSERT_LINK]`.
 
+---
+
+## 21. 🚶‍♀️ RUNWAY WALK & ALL-WOMEN DYNAMIC POSING CHOREOGRAPHY ENGINE
+
+This engine governs cinematic fashion walks, lookbook reels, and high-retention posing sequences tailored for female creators showcasing Meesho outfits on Instagram Reels and YouTube Shorts.
+
+### A. DUAL AUDIO & DELIVERY MODES
+1. **Mode A: 🎵 Pure Aesthetic Runway (Trending Song & Pure Poses — ZERO Voice-Over)** *(Default & Recommended)*:
+   - **Zero Talking Head**: Strictly 0 spoken dialogue across all cuts. Creator does NOT speak at all.
+   - **Model Expressions Only**: Warm closed-lip smile, confident editorial smirk, or playful eye-lock. Mouth remains closed or softly parted in an editorial fashion pose.
+   - **Mandatory AI Lip Delivery**:
+     `Lip Delivery: STRICTLY SILENT. Creator has natural model expressions: warm confident smile, closed lips, editorial gaze. NO speech articulation. Mouth is NOT moving. Zero talking head.`
+   - **Mandatory Avoid Block**:
+     `no speaking, no talking, no moving lips, no open mouth, no talking head, no speech articulation, no podcast style.`
+   - **Aesthetic Floating On-Screen Text (OST)**: High-impact floating text overlays (e.g. *"Wait till you see the back... 👀"*, *"The flare on this tho 🤌✨"*, *"AND IT HAS POCKETS?! 😭"*, *"Comment 'WALK' for link"*).
+   - **Beat-Drop Timeline**: Replaces voice-over pacing with musical beat-drop markers (`[00:00 Beat Intro]`, `[00:02.5 Bass Drop]`, `[00:08 Chorus Peak]`, `[00:16 Snare Hit]`, `[00:24 Outro Drop]`).
+   - **Instagram Audio Search Guide**: Curated keyword suggestions for trending tracks on Instagram.
+
+2. **Mode B: 🎙️ Spoken Voice-Over + Poses (Talking Review)**:
+   - Scene 1 is a 2-second silent visual outfit hook (00:00-00:02).
+   - Scene 2 onwards features 100% on-camera talking head lip-sync articulating the script aloud.
+
+### B. THE ALL-WOMEN VIRAL POSING CHAIN (5-STEP HIGH-ENGAGEMENT FLOW)
+Every runway walk script must choreograph the female influencer through this exact 5-step sequence:
+
+1. **Step 1 [00:00 - 00:02]: 2-Second Silent Runway Entry & Full Outfit Anchor**
+   - **Pose & Action**: Influencer advances forward with confident catwalk stride or graceful ethnic glide. Full-length head-to-heels framing. Confident poise, micro-spin, closed lips, warm smile.
+   - **Audio**: `*(NO SPOKEN VOICE — Cinematic sub-bass drop & whoosh cue. Spoken words: 0)*`
+   - **SFX**: `🔊 [SFX: Cinematic Sub-Bass Drop + Deep Whoosh]`
+   - **Speed Ramping**: `1.3x Fast Runway Walk`
+
+2. **Step 2 [00:02 - 00:06]: The Secret Whisper / Lean-In Close-Up OR Screen-Point Hook**
+   - **Pose & Action**: Influencer pauses mid-stride, leans in close to the lens, hand cupped beside mouth in a conspiratorial whisper, or confident screen point with eye-lock.
+   - **Dialogue (Mode B only)**: Spoken hook begins at 00:02 sharp! 100% on-camera talking head articulating the secret deal or relatable confession (strictly 7 to 8 words maximum).
+   - **Text Overlay (Mode A)**: 🟡 ON-SCREEN TEXT: `"Wait till you see the back... 👀"`
+   - **SFX**: `🫰 [SFX: Crisp Finger-Snap / Clapper Click]`
+   - **Speed Ramping**: `1.0x Normal Speed Velocity`
+
+3. **Step 3 [00:06 - 00:15]: The 360° Ghera Twirl + ASMR Fabric Ripple Wave**
+   - **Pose & Action**: Smooth circular 360° turn showing complete flare, lehenga/sharara fall, or dress hem. Hand gently lifts the ghera border and lets it cascade down in slow motion (ASMR visual effect). Matching organza/chiffon dupatta floats in air.
+   - **Text Overlay (Mode A)**: 🟡 ON-SCREEN TEXT: `"LOOK AT THIS FLARE 🤌✨"`
+   - **Camera**: 360° Orbital tracking pan keeping creator centered.
+   - **SFX**: `✨ [SFX: Shimmer / Magic Bell Chime]`
+   - **Speed Ramping**: `0.5x Ultra Slow-Motion`
+
+4. **Step 4 [00:15 - 00:22]: Snatched Waist Pinch + Pocket Surprise Reveal + Back-Tie Glance**
+   - **Pose & Action**: Influencer pinches back waist/ties belt to display snatched hourglass silhouette, then slips both hands into hidden deep pockets with a delightful gasp ("It has pockets!"). Over-the-shoulder glance highlighting back neckline and latkans.
+   - **Text Overlay (Mode A)**: 🟡 ON-SCREEN TEXT: `"AND IT HAS POCKETS?! 💃"`
+   - **SFX**: `💥 [SFX: Pop / Suction Sound]`
+   - **Speed Ramping**: `1.0x Normal Speed Fit Check`
+
+5. **Step 5 [00:22 - 00:30]: High-Fashion Cross-Leg Model Pause + Hair Tuck + Save Bookmark Gesture**
+   - **Pose & Action**: Influencer strikes a fierce editorial pause with one foot crossed in front, hand on hip, casual hair tuck behind ear. Points index finger down toward the Instagram save/bookmark button with a playful wink.
+   - **Text Overlay (Mode A)**: 🟡 ON-SCREEN TEXT: `"Price: Under ₹499 | Comment 'WALK' for link 👇"`
+   - **CTA**: ManyChat trigger callout (Comment 'WALK' for direct link!).
+   - **SFX**: `📸 [SFX: Camera Shutter Click x2]`
+   - **Speed Ramping**: `1.2x Snap Cut & Editorial Hold`
+
+### C. AI LOCOMOTION PHYSICS CONSTRAINTS (KLING, GOOGLE FLOW, RUNWAY GEN-3)
+To ensure zero AI hallucinations or distorted limbs during walking shots:
+- **Camera Directive**: `Full-length tracking pull-back shot, moving backward smoothly at matching walking velocity (1.2 m/s). Camera maintains fixed elevation keeping creator centered from head to heels.`
+- **Locomotion Mechanics**: `Natural human walking gait, heel-to-toe roll, realistic knee flexion, feet firmly planted on floor with ground-contact friction.`
+- **Mandatory Avoid Block**: `no sliding feet, no slipping shoes, no floating heels, no distorted gait, no third leg, no foot morphing, no disappearing ankles, no motion blur on shoes.`
 
 
 
+
+
+
+---
+
+# SECTION 22: VIRAL INSTAGRAM DANCE & HOOK-STEP CHOREOGRAPHY ENGINE (WITH DYNAMIC TRENDING SONGS & GOOGLE FLOW / KLING AI PROMPTS)
+
+## 1. PURPOSE & ALGORITHMIC ARCHITECTURE
+Fashion and outfit transition dance reels have 3x higher replay rates and 5x higher audio-driven discovery on Instagram Reels and YouTube Shorts.
+This engine choreographs cinematic Indian female creator dance sequences synchronized to real, present-time trending songs (e.g. Tauba Tauba, Gulabi Sadi, Sajni, Khalasi, APT., etc.) while generating 100% glitch-free Google Flow and Kling AI video prompts with strict biomechanical constraint locks.
+
+## 2. DYNAMIC TRENDING SONG ENGINE & BEAT-SYNC ARCHITECTURE
+Every dance reel generated must feature:
+1. Primary Trending Track: Exact Song Name + Artist + Audio Search Query (or dynamically auto-picked based on current date, season, and festivals).
+2. 2 Backup Trending Audio Alternatives: In case the creator wants an alternative vibe (e.g., Bollywood vs. Punjabi vs. Lo-Fi).
+3. 5-Phase Song Structure & Beat-Drop Mapping:
+   - Phase 1 [00:00 - 00:02] Intro Beat & Rhythmic Walk Entry: Fast 1.3x entry with subtle rhythmic shoulder bounce. 0 spoken words.
+   - Phase 2 [00:02 - 00:06] Signature Hook Step / Beat Drop: The viral signature move (e.g. Tauba Tauba shoulder pop, waist sway, or saree pallu wave) synced to the drop.
+   - Phase 3 [00:06 - 00:15] Chorus Spin & 360° Fabric Ripple Twirl: Ultra smooth circular twirl showing full garment volume, flare, and back details in 0.5x slow-mo.
+   - Phase 4 [00:15 - 00:22] Rhythmic Waist Sway / Thumka & Fit Check: Snatched waist curve, fabric quality touch, playful eye contact.
+   - Phase 5 [00:22 - 00:30] Beat-Stop Freeze Pose & Link Pointing CTA: Final editorial freeze frame, wink, pointing down to the save bookmark or link in bio with ManyChat trigger 'DANCE'.
+
+## 3. 5 VIRAL DANCE ARCHETYPES
+1. Upbeat Rhythm Bounce & Shoulder Pop (Bollywood / Punjabi):
+   - Coordinated shoulder roll, chest bounce, knee rhythm, energetic smile.
+2. 'Nazakat' Ghoomar Spin & Pallu/Dupatta Float (Festive & Wedding Viral):
+   - Holding lehenga ghera, 360° orbital cascade, soft waist thumka, wrist circles touching jhumka.
+3. Aesthetic Hip-Pop & Heel-Tap (Zara / Urban Chic):
+   - Forward step tap, hip drop to beat, blazer/jacket shrug, model smirk.
+4. Soft Lo-Fi Sway & Jhumka Touch (Aesthetic Romantic):
+   - Rhythmic body weight shift, hair tuck, soft smile, subtle fourth-wall glance.
+5. 4-Count Fast Transition Dance & Save Gesture:
+   - High-energy rapid routine designed for 15s infinite loops.
+
+## 4. GOOGLE FLOW & KLING AI BIOMECHANICAL MOTION CONSTRAINTS
+To prevent extra limbs, third legs, or sliding feet during dance generation:
+- Biomechanical Physics Lock:
+  Natural human dance biomechanics, stationary foot pivot on turns, authentic center-of-gravity weight shifts, realistic fabric dynamics responding to centrifugal rotation, no floating heels, feet firmly planted on floor.
+- Lip Delivery Mandate:
+  Lip Delivery: STRICTLY SILENT. Closed lips, joyous playful smile, energetic eye contact. Mouth is closed and NOT moving. Zero talking head.
+- Mandatory Avoid Safety Block:
+  no sliding feet, no slipping shoes, no floating heels, no third leg, no extra arms, no foot morphing, no disappearing ankles, no jerky movements, no speaking, no moving lips, no open mouth.
+
+## 5. PLAN E: LYRICAL EXPRESSIONS & PLAYFUL HOOK MOUTHING (PHOTO-TO-VIDEO)
+When Plan E is selected, AI generates dance directly from photos without requiring a reference video:
+- Expression Dynamics: Creator does NOT give robotic full speech. Instead, gives authentic influencer lyrical micro-expressions:
+  * Hook Lyric Mouthing (00:02 - 00:06): Subtle, playful lip-mouthing on the viral song hook words (e.g. "Tauba tauba", "Gulabi sadi", "Sajni") with joyful smile and coordinated head bounce.
+  * Lyrical Smirks & Eye-Winks: Biting lip playfully on beat drops, soft wink, and confident editorial gaze.
+  * Motion Prompt Directive: "Mouth Delivery: Subtle lyrical mouthing of the hook phrase '[Song Lyric]' with joyful natural lip articulation and head tilt. Closed lips and playful smirk during twirls and poses. Avoid: wide open mouth, exaggerated jaw movement, robotic speech articulation."
+
+## 6. PLAN C: GOOGLE FLOW VIDEO-TO-VIDEO (V2V) MOTION TRANSFER & CHARACTER SWAP
+When Plan C is selected, creator uses a real viral dance reel as an input reference video in Google Flow / Kling AI:
+- Motion & Lip-Sync Preservation:
+  * Preserves 100% of the underlying human dance choreography, skeletal kinematics, hand gestures, and lip-sync timing from the reference video.
+  * Replaces the dancer with the Indian female creator reference and reskins the clothing into the target Meesho outfit.
+- V2V Prompt Framework (Google Flow & Kling V2V):
+  "Video-to-Video Character & Motion Transfer: Preserve 100% of the underlying dance trajectory, skeletal kinematics, rhythmic hip sways, and lip-sync articulation from the input reference video. Reskin the subject into the Indian female creator with locked facial identity, wearing [Garment Title & Description]. Ensure authentic fabric physics where the flared skirt/dupatta ripples and billows in realistic response to centrifugal dance movement. Negative: no distorted limbs, no sliding feet, no altered dance tempo, no desynchronized mouth."
+
+## 7. FLEXIBLE DURATION PACING & 60-SECOND FULL REEL SUPPORT (MAX 60s)
+The Dance Studio and Motion Transfer Engine natively support durations from **10 seconds up to a maximum of 60 seconds** (10s, 15-20s, 30s, 45s, 60s, or custom):
+1. **Reference Dance Reel Video Upload (Plan C)**:
+   - Supports uploading reference viral dance reels from 5 seconds up to **60 seconds maximum**.
+   - Gemini Vision and Google Flow / Kling V2V prompts extract and preserve the complete choreography, beat timings, and lip movements across the full video duration (up to 60s).
+2. **60-Second Extended Reel Choreography Structure**:
+   - For full 60s reels, the AI choreographs a dynamic 6-scene routine rather than looping:
+     * **[00:00 - 00:05] Intro Walk & Beat Build-Up**: 1.3x speed entry, rhythmic shoulder bounce, eye contact, 0 spoken words.
+     * **[00:05 - 00:15] Signature Hook Step 1 (Beat Drop)**: First viral signature move or hook-step lip-mouthing.
+     * **[00:15 - 00:25] 360° Slow-Motion Twirl & Fabric Ripple**: 0.5x ultra slow-mo circular spin highlighting garment flare, hemline movement, and dupatta/pallu cascade.
+     * **[00:25 - 00:38] Mid-Track Rhythm, Waist Sways & Thumka**: 1.0x rhythm sync, snatched waist curve, fabric quality touch, playful hair tuck.
+     * **[00:38 - 00:50] Signature Hook Step 2 (High-Energy Climax)**: Extended hook-step with dual hand gestures and dynamic foot pivot.
+     * **[00:50 - 01:00] Beat-Stop Freeze Pose & Save Bookmark CTA**: Editorial freeze frame, playful wink, pointing down to Instagram save/bookmark button with ManyChat keyword 'DANCE'.
+
+## 8. PLAN D: PURE AESTHETIC DANCE & HOOK-STEPS (WITHOUT LIP-SYNC / STRICTLY CLOSED LIPS)
+When Plan D is selected, AI generates high-energy dance reels focusing 100% on body choreography, garment flare, and eye expressions with **STRICTLY CLOSED LIPS**:
+1. **Core Advantage**: Zero risk of AI mouth distortion, teeth morphing, jaw warping, or desynchronized lip flaps. The creator's face remains 100% photorealistic and gorgeous in every frame.
+2. **Universal Background Track Compatibility**: Because lips are completely closed, the generated video can be paired with ANY viral audio track (Bollywood, Punjabi, Lo-Fi, or English Pop) without any sync issues.
+3. **Pure Choreography Architecture**:
+   - Signature shoulder rolls, dual wrist circular gestures, knee bounces.
+   - 360° orbital slow-motion twirl highlighting flared hemline, dupatta/cape ripple.
+   - Snatched waist curve thumka and graceful jhumka touch.
+   - High-fashion freeze frame with a playful wink and index finger pointing down to comment 'DANCE'.
+4. **Prompt Lock Formulation**:
+   - `Lip Delivery: STRICTLY SILENT. Confident closed-lip smile, radiant eye contact, playful smirk. Mouth is 100% closed and NOT moving at all. Zero talking head, zero lip-sync, zero lyrics mouthing.`
+   - `Avoid: no speaking, no talking, no singing, no moving lips, no mouthing words, no open mouth, no mouth flapping, no sliding feet, no extra limbs.`
+5. **Conversion Driver**:
+   - On-screen bold text overlay: `"Comment 'DANCE' for direct link! 👇"`
+   - ManyChat Auto-DM template triggered on keyword `DANCE`.

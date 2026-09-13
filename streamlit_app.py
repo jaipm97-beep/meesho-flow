@@ -1503,7 +1503,7 @@ Provide a sharp, encouraging, professional Stylist Fit Report with these 4 secti
         "generationConfig": {"temperature": 0.4, "maxOutputTokens": 1024}
     }
     
-    for model in ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"]:
+    for model in ["gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-flash-latest", "gemini-3.7-flash"]:
         api_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
         try:
             r = requests.post(api_url, json=payload, timeout=25)
@@ -1876,6 +1876,8 @@ def render_brand_dupe_selector(key_prefix="studio", meesho_price="₹499"):
             "brand_price": brand_price_input,
             "savings_text": savings_text
         }
+
+render_brand_dupe_comparator = render_brand_dupe_selector
 
 
 # ---------------------------------------------------------
@@ -2752,6 +2754,428 @@ TERMINOLOGY & SAFETY RULES:
             
     return f"⚠️ **Gemini API Generation Error**: Unable to generate problem-solving script ({last_err}). Please check your Gemini API key."
 
+
+# ---------------------------------------------------------
+# 🚶‍♀️ RUNWAY WALK & ALL-WOMEN DYNAMIC POSING ENGINE
+# ---------------------------------------------------------
+def generate_runway_walk_script(
+    duration: str = "30s",
+    language: str = "Hinglish (Natural Indian Social Tone)",
+    voice_tone: str = "👠 Fashion Stylist & Expert Vibe",
+    walk_style: str = "👠 Power Runway Catwalk Strut",
+    outfit_type: str = "🥻 Ethnic Kurti / Sharara / Anarkali Set",
+    garment_title: str = "Designer Festival Outfit",
+    price: str = "₹499",
+    meesho_code: str = "s-1892841",
+    background_preset_desc: str = "",
+    creator_bytes: bytes = None,
+    product_bytes: bytes = None,
+    api_key: str = None,
+    include_on_screen_text: bool = False,
+    brand_dupe_info: dict = None,
+    affiliate_link: str = "",
+    music_vibe: str = "🎧 Slowed + Reverb Runway Bass",
+    posing_focus: str = "🌟 Full 5-Step All-Women Posing Flow",
+    delivery_mode: str = "silent_aesthetic",
+    **kwargs
+) -> str:
+    bg_lock = background_preset_desc if background_preset_desc else "Minimalist warm ivory limewash wall, light natural oak floor, sheer white curtains, diffused afternoon daylight"
+    
+    if not api_key:
+        return "⚠️ **Gemini API Key Required**: Please enter your Gemini API Key in the sidebar or save it in `.env` to generate live runway walk scripts."
+        
+    master_sys_instruction = load_master_prompt()
+    contents_parts = []
+    
+    if creator_bytes:
+        c_bytes, c_mime = optimize_image(creator_bytes)
+        contents_parts.append({"text": "CREATOR REFERENCE IMAGE (Treat this image as CREATOR_REFERENCE for 100% facial identity, hair, natural Indian skin undertone, height, and authentic body proportions locked across all runway cuts):"})
+        contents_parts.append({"inlineData": {"mimeType": c_mime, "data": base64.b64encode(c_bytes).decode("utf-8")}})
+        
+    if product_bytes:
+        p_bytes, p_mime = optimize_image(product_bytes)
+        contents_parts.append({"text": "OUTFIT REFERENCE IMAGE (The fashion garment to be showcased with 100% visual fidelity to cut, fabric, color, prints, and flare):"})
+        contents_parts.append({"inlineData": {"mimeType": p_mime, "data": base64.b64encode(p_bytes).decode("utf-8")}})
+        
+    dupe_block = ""
+    if brand_dupe_info and brand_dupe_info.get("enabled"):
+        b_name = brand_dupe_info.get("brand_name", "High-End Brand")
+        b_price = brand_dupe_info.get("brand_price", "₹2,499")
+        dupe_block = f"""
+- 🏷️ BRAND PRICE COMPARISON ACTIVE:
+* Compare high-end fashion price ({b_price} at {b_name}) vs this identical Meesho look ({price if price else '₹499'})! Emphasize huge savings with luxury styling!
+"""
+
+    is_silent_mode = (delivery_mode == "silent_aesthetic")
+
+    if is_silent_mode:
+        delivery_rule_block = """
+- 🎵 AUDIO & DELIVERY MODE: PURE AESTHETIC RUNWAY (TRENDING INSTAGRAM MUSIC & PURE POSES — ZERO VOICE-OVER / ZERO TALKING HEAD)
+  * CRITICAL MANDATE: STRICTLY 0 SPOKEN WORDS. ZERO VOICE-OVER. NO DIALOGUE AT ALL.
+  * Lip Delivery Across All Scenes: STRICTLY SILENT. The female influencer has closed lips with a warm smile, editorial smirk, or soft natural gaze. Mouth is strictly closed and NOT moving. Avoid: speaking, talking, moving lips, open mouth, talking head, mouth articulation.
+  * Top Audio Section: Do NOT generate a spoken voice-over block. Instead, output:
+    `*(ZERO VOICE-OVER / PURE AESTHETIC MUSIC MODE: Designed specifically for applying trending Instagram / TikTok background songs. Influencer does not speak, ensuring zero AI mouth distortion!)*`
+    and provide the 🎵 INSTAGRAM BEAT-DROP SYNC TIMELINE (Markers for Intro Beat, First Drop, Chorus Twirl Peak, Snare Hit, Outro Hold).
+  * 🟡 AESTHETIC FLOATING ON-SCREEN TEXT (OST): For EVERY single scene, provide high-converting, bold all-caps aesthetic floating text overlays with emojis (e.g. 🟡 ON-SCREEN TEXT: "WAIT TILL YOU SEE THE BACK... 👀", 🟡 ON-SCREEN TEXT: "LOOK AT THIS FLARE 🤌✨", 🟡 ON-SCREEN TEXT: "AND IT HAS POCKETS?! 😭", 🟡 ON-SCREEN TEXT: "Price: Under ₹499 • Comment 'WALK' for link 👇").
+  * 🎶 TRENDING INSTAGRAM AUDIO SEARCH KEYWORDS: Recommend 5 specific viral audio search terms on Instagram/CapCut for this outfit aesthetic.
+"""
+        ost_block = """
+- 🟡 ON-SCREEN BOLD TEXT: Include high-contrast, bold all-caps on-screen text overlays with emojis for EVERY scene (e.g. 🟡 ON-SCREEN TEXT: "🚨 ZARA DUPE UNDER ₹499!"). These are essential as there is no spoken voice-over.
+"""
+    else:
+        delivery_rule_block = """
+- 🎙️ AUDIO & DELIVERY MODE: SPOKEN VOICE-OVER + POSES (TALKING REVIEW)
+  * Scene 1 (00:00 - 00:02) is a 2-second silent visual hook (0 spoken words, closed lips).
+  * Scene 2 (00:02 onwards) features 100% on-camera talking head lip-sync articulating the script aloud.
+  * Top Audio Section: Provide a COMPLETE CONTINUOUS MASTER VOICE-OVER TRACK starting at 00:02 for 1-take recording.
+"""
+        ost_block = """
+- 🟡 ON-SCREEN BOLD TEXT: Include high-contrast, bold all-caps on-screen text overlays with emojis for EVERY scene (e.g. 🟡 ON-SCREEN TEXT: "🚨 ZARA DUPE UNDER ₹499!").
+""" if include_on_screen_text else """
+- 🟡 ON-SCREEN TEXT: Do NOT include on-screen text overlays; focus purely on spoken dialogue, SFX cues, and visual posing.
+"""
+
+    pacing_info = get_duration_pacing_tier(duration)
+    resolved_link = affiliate_link.strip() if affiliate_link and affiliate_link.strip() else f"https://www.meesho.com/search?q={quote_plus(garment_title if garment_title else 'meesho fashion')}"
+
+    user_prompt = f"""
+Please generate the complete professional RUNWAY WALK & ALL-WOMEN DYNAMIC POSING REEL SCRIPT & GOOGLE FLOW / KLING VIDEO PROMPTS according to MASTER PROMPT Section 21 and Section 18.
+
+RUNWAY & OUTFIT SPECIFICATIONS:
+- Garment Title: {garment_title if garment_title else 'Meesho Designer Outfit'}
+- Outfit Category: {outfit_type}
+- Walk Archetype: {walk_style}
+- Recommended Music Vibe: {music_vibe}
+- Posing Priority: {posing_focus}
+- Target Duration: {duration} (Strictly between Minimum 10 Seconds and Maximum 60 Seconds)
+- Audio & Delivery Mode: {'Pure Aesthetic Runway (Trending Song & Pure Poses — ZERO Voice-Over)' if is_silent_mode else 'Spoken Voice-Over + Poses (Talking Review)'}
+- Spoken Language: {'N/A (Pure Aesthetic Music Mode - 0 Spoken Words)' if is_silent_mode else language}
+- Voice Tone: {'N/A (Pure Music Mode)' if is_silent_mode else voice_tone}
+- Price: {price if price else '₹499'}
+- Meesho Code: {meesho_code if meesho_code else 's-1892841'}
+- Creator Affiliate / Buy Link: {resolved_link} (Embed this exact link in ManyChat Auto-DM template with keyword 'WALK')
+- Environment Lock: {bg_lock}
+{dupe_block}
+{ost_block}
+{delivery_rule_block}
+
+{pacing_info['prompt_instructions']}
+
+MANDATORY 5-STEP ALL-WOMEN POSING STRUCTURE:
+1. Top Section:
+   - 🎵 RECOMMENDED BGM & SFX SOUND DESIGN CUES (Exact timestamps for CapCut / InShot sync)
+   - ⚡ SPEED RAMPING BLUEPRINT TABLE (Timestamps, Speed Multiplier, Editorial Direction)
+   {'- 🎵 INSTAGRAM BEAT-DROP SYNC & 5 TRENDING AUDIO SEARCH KEYWORDS' if is_silent_mode else '- 🎙️ COMPLETE CONTINUOUS MASTER VOICE-OVER TRACK (Smooth unbroken paragraph for 1-take recording starting at 00:02)'}
+2. Scene-by-Scene Posing Breakdown:
+   - Scene 1 [00:00 - 00:02]: 2-Second Silent Runway Entry & Full Outfit Anchor (1.3x Speed | 🔊 SFX: Sub-Bass Drop + Deep Whoosh | 0 Spoken Words | Closed lips, confident smile)
+   - Scene 2 [00:02 - 00:06]: The Secret Whisper / Lean-In Close-Up OR Screen-Point Eye-Lock (1.0x Speed | 🫰 SFX: Finger-Snap / Clapper Click | {'Pure Visual Pose + Bold Floating Text (0 Spoken Words)' if is_silent_mode else 'Spoken Hook begins at 00:02 sharp, strictly 7-8 words max, 100% on-camera lip-sync'})
+   - Scene 3 [00:06 - 00:15]: The 360° Ghera Twirl & ASMR Fabric Ripple Wave (0.5x Ultra Slow-Motion | ✨ SFX: Shimmer Chime | 360° orbital camera pan, ghera cascade, dupatta float)
+   - Scene 4 [00:15 - 00:22]: Snatched Waist Pinch & Pocket Surprise Reveal ("It has pockets!") + Back-Tie Latkan Flip (1.0x Speed | 💥 SFX: Pop Sound | Waist cinch, real-life fit check)
+   - Scene 5 [00:22 - 00:30]: High-Fashion Cross-Leg Model Pause + Hair Tuck + Save Bookmark Gesture (1.2x Speed | 📸 SFX: Camera Shutter Click x2 | Pointing to save button, CTA comment 'WALK' for link)
+3. Copy-Ready Google Flow & Kling AI Video Prompts for every scene:
+   - Put each prompt inside a ```text code block for one-click copying.
+   - Full-length tracking pull-back shot maintaining matching walking velocity (1.2 m/s).
+   - Locomotion Mechanics: natural human walking gait, feet firmly on ground.
+   - Lip Delivery: {'STRICTLY SILENT. Creator has closed lips, warm confident smile, editorial gaze. Mouth is NOT moving. Zero talking head.' if is_silent_mode else '100% on-camera lip-sync for speaking scenes from 00:02 onwards.'}
+   - Mandatory Avoid Block: 'no sliding feet, no slipping shoes, no floating heels, no distorted gait, no third leg, no foot morphing, no disappearing ankles, no morphing face, no inconsistent body shape' + (', no speaking, no talking, no moving lips, no open mouth, no talking head, no speech articulation' if is_silent_mode else '')
+4. 🚀 SCRIPT-LINKED INSTAGRAM & YOUTUBE SHORTS SEO SUITE:
+   - Hook-Sync Instagram Caption ({'first 125 chars matched to visual hook / text overlay' if is_silent_mode else 'first 125 chars matched to spoken dialogue'})
+   - 3-Tier Targeted Hashtags (#MeeshoHaul #RunwayWalk #LookbookReels ...)
+   - Instagram Accessibility Alt-Text
+   - ManyChat Auto-DM Template (Trigger: 'WALK', embedded link)
+   - YouTube Shorts 3 Viral Titles, Video Chapters/Timestamps, 500-char Meta Tags
+   - WhatsApp / Telegram Deal Card
+"""
+    contents_parts.append({"text": user_prompt})
+    
+    payload = {
+        "system_instruction": {"parts": [{"text": master_sys_instruction}]},
+        "contents": [{"parts": contents_parts}],
+        "generationConfig": {"temperature": 0.75, "topP": 0.95, "maxOutputTokens": 8192}
+    }
+    
+    candidate_models = ["gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-flash-latest", "gemini-3.7-flash"]
+    last_err = ""
+    for model in candidate_models:
+        api_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+        try:
+            res = requests.post(api_url, json=payload, timeout=45)
+            if res.status_code == 200:
+                data = res.json()
+                cands = data.get("candidates", [])
+                if cands:
+                    text = cands[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+                    if text:
+                        return text
+            else:
+                err_data = res.json() if res.content else {}
+                last_err = err_data.get("error", {}).get("message", f"HTTP {res.status_code}")
+        except Exception as ex:
+            last_err = str(ex)
+            continue
+            
+    return f"⚠️ **Gemini API Generation Error**: Unable to generate runway walk script ({last_err}). Please check your Gemini API key."
+
+
+
+
+# ---------------------------------------------------------
+# 💃 VIRAL INSTAGRAM DANCE & HOOK-STEP ENGINE
+# ---------------------------------------------------------
+def generate_srt_from_script(script_text: str) -> str:
+    """
+    Parses timestamps and on-screen texts from script and builds standard .SRT subtitle content.
+    """
+    if not script_text:
+        return ""
+    lines = script_text.splitlines()
+    entries = []
+    current_ts = None
+    ts_pattern = re.compile(r'\[(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})\]')
+
+    for line in lines:
+        ts_m = ts_pattern.search(line)
+        if ts_m:
+            current_ts = (ts_m.group(1), ts_m.group(2))
+        if ("ON-SCREEN TEXT" in line.upper() or "SUBTITLE" in line.upper()) and ":" in line and current_ts:
+            raw_text = line.split(":", 1)[1].strip()
+            raw_text = raw_text.strip('*').strip().strip('"').strip("'").strip("”").strip("“").strip()
+            entries.append((current_ts[0], current_ts[1], raw_text))
+            current_ts = None
+
+    if not entries:
+        for line in lines:
+            ts_m = ts_pattern.search(line)
+            if ts_m and "SCENE" in line.upper():
+                title = line.split("—")[-1] if "—" in line else line
+                title = title.replace("#", "").replace("*", "").strip()
+                entries.append((ts_m.group(1), ts_m.group(2), title))
+
+    def format_ts(mm_ss: str) -> str:
+        parts = mm_ss.split(':')
+        mins = int(parts[0])
+        secs = int(parts[1])
+        return f"00:{mins:02d}:{secs:02d},000"
+
+    srt_lines = []
+    for i, (st_t, en_t, txt) in enumerate(entries, 1):
+        srt_lines.append(f"{i}")
+        srt_lines.append(f"{format_ts(st_t)} --> {format_ts(en_t)}")
+        srt_lines.append(txt)
+        srt_lines.append("")
+
+    return "\n".join(srt_lines).strip()
+
+
+def generate_dance_hookstep_script(
+    duration: str = "30s",
+    song_choice: str = "🔥 Tauba Tauba – Karan Aujla (Upbeat Punjabi / Bollywood Bounce)",
+    custom_song_name: str = "",
+    dance_archetype: str = "🕺 Upbeat Rhythm Bounce & Shoulder Pop (Bollywood / Punjabi)",
+    outfit_type: str = "🥻 Ethnic Kurti / Sharara / Anarkali Set",
+    garment_title: str = "Designer Flare Outfit",
+    price: str = "₹499",
+    meesho_code: str = "s-1892841",
+    background_preset_desc: str = "",
+    creator_bytes: bytes = None,
+    product_bytes: bytes = None,
+    api_key: str = None,
+    include_on_screen_text: bool = True,
+    brand_dupe_info: dict = None,
+    affiliate_link: str = "",
+    dance_method: str = "Plan E (Lyrical Expressions & Hook Mouthing)",
+    video_bytes: bytes = None,
+    video_filename: str = "",
+    **kwargs
+) -> str:
+    bg_lock = background_preset_desc if background_preset_desc else "Modern aesthetic creator studio, warm beige limewash wall, soft studio fill light, natural oak floor"
+    
+    if not api_key:
+        return "⚠️ **Gemini API Key Required**: Please enter your Gemini API Key in the sidebar or save it in `.env` to generate live viral dance scripts."
+        
+    master_sys_instruction = load_master_prompt()
+    contents_parts = []
+    
+    if creator_bytes:
+        c_bytes, c_mime = optimize_image(creator_bytes)
+        contents_parts.append({"text": "CREATOR REFERENCE IMAGE (Treat this image as CREATOR_REFERENCE for 100% facial identity, hair, natural Indian skin undertone, height, and authentic body proportions locked across all dance cuts):"})
+        contents_parts.append({"inlineData": {"mimeType": c_mime, "data": base64.b64encode(c_bytes).decode("utf-8")}})
+        
+    if product_bytes:
+        p_bytes, p_mime = optimize_image(product_bytes)
+        contents_parts.append({"text": "OUTFIT REFERENCE IMAGE (The fashion garment to be showcased with 100% visual fidelity to cut, fabric, color, prints, and flare during dance moves):"})
+        contents_parts.append({"inlineData": {"mimeType": p_mime, "data": base64.b64encode(p_bytes).decode("utf-8")}})
+        
+    if video_bytes:
+        if len(video_bytes) <= 25 * 1024 * 1024:
+            v_mime = "video/mp4"
+            if video_filename.lower().endswith(".mov"):
+                v_mime = "video/quicktime"
+            elif video_filename.lower().endswith(".webm"):
+                v_mime = "video/webm"
+            contents_parts.append({"text": f"USER UPLOADED REFERENCE DANCE REEL ({video_filename}, up to 60s): Analyze this video's exact dance movements, rhythm, hip sways, waist movement, and lip-sync timing so the Google Flow V2V prompt matches this exact choreography across the full duration (up to 60 seconds)!"})
+            contents_parts.append({"inlineData": {"mimeType": v_mime, "data": base64.b64encode(video_bytes).decode("utf-8")}})
+        else:
+            contents_parts.append({"text": f"USER UPLOADED REFERENCE DANCE REEL: File '{video_filename}' ({round(len(video_bytes)/(1024*1024), 1)} MB, up to 60s) provided. Choreograph and transfer full motion across up to 60 seconds."})
+        
+    dupe_block = ""
+    if brand_dupe_info and brand_dupe_info.get("enabled"):
+        b_name = brand_dupe_info.get("brand_name", "High-End Brand")
+        b_price = brand_dupe_info.get("brand_price", "₹2,499")
+        dupe_block = f"""
+- 🏷️ BRAND PRICE COMPARISON ACTIVE:
+* Compare high-end fashion price ({b_price} at {b_name}) vs this identical Meesho look ({price if price else '₹499'})!
+"""
+
+    ost_block = """
+- 🟡 AESTHETIC ON-SCREEN FLOATING TEXT: Provide bold, punchy, high-contrast all-caps on-screen text overlays with emojis for EVERY scene (e.g. 🟡 ON-SCREEN TEXT: "WAIT FOR THE BEAT DROP... 🤌✨").
+""" if include_on_screen_text else ""
+
+    pacing_info = get_duration_pacing_tier(duration)
+    resolved_link = affiliate_link.strip() if affiliate_link and affiliate_link.strip() else f"https://www.meesho.com/search?q={quote_plus(garment_title if garment_title else 'meesho fashion')}"
+
+    # Determine song details dynamically
+    ctx = get_seasonal_context()
+    if "Auto-Pick" in song_choice or "Live Trend" in song_choice:
+        resolved_song_directive = f"""
+- 🎵 SONG SELECTION MODE: DYNAMIC LIVE TREND AUTO-PICK (DATE & SEASON AWARE)
+  * Today's Context: {ctx['day_name']}, {ctx['date_str']} | Season & Shopping Focus: {ctx['season_title']} ({ctx['season_focus']}).
+  * INSTRUCTION: Select the #1 freshest, most viral song currently exploding on Instagram Reels / YouTube Shorts that best matches this outfit ({outfit_type}) and today's season/festival.
+  * Explicitly output:
+    - 🎵 Primary Trending Song: '[Selected Song Name] - [Artist]'
+    - 🔍 Instagram Audio Search Keyword: '[Exact search term for Instagram Reels Audio]'
+    - 🎧 2 Alternative Trending Audio Options: '[Alt 1] and [Alt 2]'
+"""
+    elif "Custom" in song_choice:
+        actual_song = custom_song_name.strip() if custom_song_name and custom_song_name.strip() else "Trending Bollywood/Punjabi Viral Song"
+        resolved_song_directive = f"""
+- 🎵 SONG SELECTION MODE: USER CUSTOM SONG
+  * Specified Track: {actual_song}
+  * Explicitly output:
+    - 🎵 Primary Trending Song: '{actual_song}'
+    - 🔍 Instagram Audio Search Keyword: '{actual_song}'
+    - 🎧 2 Alternative Trending Audio Options for this vibe
+"""
+    else:
+        resolved_song_directive = f"""
+- 🎵 SONG SELECTION MODE: PRESET TRENDING TRACK
+  * Selected Track: {song_choice}
+  * Explicitly output:
+    - 🎵 Primary Trending Song: '{song_choice.split('(')[0].strip()}'
+    - 🔍 Instagram Audio Search Keyword: '{song_choice.split('–')[0].replace('🔥','').replace('🥻','').replace('🌸','').replace('💃','').replace('🕶️','').replace('⚡','').strip()}'
+    - 🎧 2 Alternative Trending Audio Options for this vibe
+"""
+
+    is_pure_dance = ("Plan D" in dance_method or "Without Lip-Sync" in dance_method)
+    is_v2v_motion = ("Plan C" in dance_method or "Motion Transfer" in dance_method)
+
+    if is_v2v_motion:
+        method_directive = """
+- 🎯 GENERATION METHOD: PLAN C (GOOGLE FLOW & KLING VIDEO-TO-VIDEO MOTION TRANSFER & CHARACTER SWAP)
+  * TARGET WORKFLOW: Creator inputs an existing viral dance reel video into Google Flow (Google Veo) / Kling AI as reference video.
+  * YOUR MANDATE: Generate specialized Video-to-Video character replacement & motion preservation prompts:
+    1. Instruct the AI model to track and preserve 100% of the underlying human dance trajectory, skeletal kinematics, hip sways, wrist turns, and lip-sync timing from the input video.
+    2. Reskin the subject into the Indian female creator with 100% facial identity lock.
+    3. Reskin the outfit into this exact Meesho garment with realistic cloth dynamics matching the dance velocity.
+    4. Provide clear, step-by-step Video-to-Video execution instructions for Google Flow & Kling AI.
+"""
+    elif is_pure_dance:
+        method_directive = """
+- 🎯 GENERATION METHOD: PLAN D (PURE AESTHETIC DANCE & HOOK-STEPS — WITHOUT LIP-SYNC / STRICTLY CLOSED LIPS)
+  * TARGET WORKFLOW: Creator generates dance directly from photos using Google Flow / Kling AI. ZERO reference video needed!
+  * YOUR MANDATE: Generate prompts with STRICTLY CLOSED LIPS and PURE BODY/CHOREOGRAPHY DYNAMICS:
+    1. Lip Delivery: STRICTLY SILENT & CLOSED LIPS. Confident radiant closed-lip smile, playful eye winks, elegant editorial gaze. Mouth is 100% closed and NOT moving across all scenes. Zero singing, zero mouthing, zero mouth flapping.
+    2. Body Choreography Focus: Viral shoulder roll, dual wrist circle gestures, 360° orbital fabric twirl, snatched waist thumka, and high-fashion freeze frame.
+    3. Negative Constraints Lock: 'no speaking, no talking, no singing, no moving lips, no mouthing words, no open mouth, no mouth flapping, no sliding feet, no extra limbs'.
+"""
+    else:
+        method_directive = """
+- 🎯 GENERATION METHOD: PLAN E (PHOTO-TO-VIDEO WITH LYRICAL EXPRESSIONS & PLAYFUL HOOK MOUTHING)
+  * TARGET WORKFLOW: Creator generates dance directly from photos using Google Flow / Kling Text-to-Video / Image-to-Video. NO reference video needed!
+  * YOUR MANDATE: Generate prompts with natural influencer lyrical micro-expressions:
+    1. Hook Lyric Mouthing (00:02 - 00:06): Creator subtly and playfully mouths the viral hook words of the song with natural head bounce and soft smile.
+    2. Lyrical Smirks & Winks: Playful smirk on beat drops, soft wink, confident editorial gaze.
+    3. Closed lips and playful smile during 360° twirls and model freeze frames (zero robotic speech articulation).
+"""
+
+    user_prompt = f"""
+Please generate the complete professional VIRAL INSTAGRAM DANCE & HOOK-STEP REEL SCRIPT & GOOGLE FLOW / KLING AI VIDEO PROMPTS according to MASTER PROMPT Section 22 and Section 18.
+
+DANCE & OUTFIT SPECIFICATIONS:
+- Garment Title: {garment_title if garment_title else 'Meesho Designer Flare Outfit'}
+- Outfit Category: {outfit_type}
+- Dance Style Archetype: {dance_archetype}
+- Execution Method: {'Plan C (Google Flow Video-to-Video Motion Transfer)' if is_v2v_motion else ('Plan D (Pure Dance — Without Lip-Sync / Strictly Closed Lips)' if is_pure_dance else 'Plan E (Photo-to-Video Lyrical Expressions & Hook Mouthing)')}
+- Target Duration: {duration} (Strictly between Minimum 10 Seconds and Maximum 60 Seconds)
+- Audio Mode: PURE AESTHETIC TRENDING MUSIC (0 SPOKEN WORDS - ZERO VOICE-OVER - ZERO TALKING HEAD)
+- Price: {price if price else '₹499'}
+- Meesho Code: {meesho_code if meesho_code else 's-1892841'}
+- Creator Affiliate / Buy Link: {resolved_link} (Embed this exact link in ManyChat Auto-DM template with keyword 'DANCE')
+- Environment Lock: {bg_lock}
+{dupe_block}
+{ost_block}
+{resolved_song_directive}
+{method_directive}
+
+{pacing_info['prompt_instructions']}
+
+MANDATORY STRUCTURE:
+1. Top Section:
+   - 🎵 PRIMARY TRENDING SONG & INSTAGRAM AUDIO SEARCH KEYWORDS (Exact search term, BPM vibe, and 2 alternative tracks)
+   - ⏱️ SONG BEAT-DROP TIMESTAMPS & CUE BREAKDOWN
+   - ⚡ SPEED RAMPING BLUEPRINT TABLE (Timestamps, Speed Multiplier, Dance Motion, CapCut Directive)
+2. Scene-by-Scene Dance & Expression Breakdown (Paced for full duration: {duration} — supporting up to 60 seconds maximum):
+   - Accurately divide the full duration ({duration}, up to 60s) across 4 to 6 choreographed scenes matching the song's beat drops:
+     * Intro Scene (First 2-5s): Rhythmic walk entry, shoulder bounce, 1.3x speed, 0 spoken words, model smile.
+     * Hook Step 1 Beat Drop: {'V2V: Preserve 100% human dance motion and lip-sync from reference reel' if is_v2v_motion else ('Plan D: Signature shoulder rolls, dual wrist circular gestures, and hip drop with radiant closed-lip smile' if is_pure_dance else 'Plan E: Playful subtle mouthing of viral hook lyric with head bounce & smirk')}.
+     * Slow-Motion Showcase: 360° orbital camera pan showing full fabric ripple, lehenga/kurti flare cascade and back details (0.5x Ultra Slow-Motion).
+     * Mid-Track Rhythm / Transition: Rhythmic waist sway, thumka & fit check, snatched waist curve, playful eye contact (1.0x Speed).
+     * If duration >= 45s: Extended Hook Step 2 Climax with dual hand gestures, high-energy foot pivots, and second beat-drop choreography.
+     * Outro Climax (Final 4-8s up to {duration}): Beat-stop freeze pose, playful wink, pointing down to Instagram save/bookmark button with CTA 'DANCE' (1.2x Snap Cut).
+3. Copy-Ready Google Flow & Kling AI Video Prompts for every scene:
+   - Put each prompt inside a ```text code block for one-click copying.
+   {'- Format as Video-to-Video (V2V) Character & Motion Transfer Prompts: track skeletal kinematics, trajectory, and mouth articulation while reskinning model and Meesho outfit.' if is_v2v_motion else ('- Format as Pure Dance Prompts (Without Lip-Sync): STRICTLY CLOSED LIPS, radiant model smile, zero mouthing words, stationary foot pivot on twirls.' if is_pure_dance else '- Format as Photo-to-Video Prompts with Lyrical Expressions: subtle mouthing on Scene 2 hook lyric, closed lips with playful smirk on other scenes, stationary foot pivot on twirls.')}
+   - Biomechanical Kinematics Lock: natural human dance movements, stationary foot pivot on twirls, authentic weight shifts, realistic cloth ripple physics.
+   - Mandatory Avoid Block: 'no sliding feet, no slipping shoes, no floating heels, no third leg, no extra arms, no foot morphing, no disappearing ankles, no jerky movement, no unnatural speech articulation'.
+4. 🚀 SCRIPT-LINKED INSTAGRAM & YOUTUBE SHORTS SEO SUITE:
+   - Hook-Sync Instagram Caption (includes trending song tag and ManyChat trigger 'DANCE')
+   - 3-Tier Targeted Hashtags (#MeeshoHaul #DanceReels #HookStep #OutfitInspo ...)
+   - Instagram Accessibility Alt-Text
+   - ManyChat Auto-DM Template (Trigger: 'DANCE', embedded link)
+   - YouTube Shorts 3 Viral Titles, Video Chapters/Timestamps, 500-char Meta Tags
+   - WhatsApp / Telegram Deal Card
+"""
+    contents_parts.append({"text": user_prompt})
+    
+    payload = {
+        "system_instruction": {"parts": [{"text": master_sys_instruction}]},
+        "contents": [{"parts": contents_parts}],
+        "generationConfig": {"temperature": 0.75, "topP": 0.95, "maxOutputTokens": 8192}
+    }
+    
+    candidate_models = ["gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-flash-latest", "gemini-3.7-flash"]
+    last_err = ""
+    for model in candidate_models:
+        api_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+        try:
+            res = requests.post(api_url, json=payload, timeout=45)
+            if res.status_code == 200:
+                data = res.json()
+                cands = data.get("candidates", [])
+                if cands:
+                    text = cands[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+                    if text:
+                        return text
+            else:
+                err_data = res.json() if res.content else {}
+                last_err = err_data.get("error", {}).get("message", f"HTTP {res.status_code}")
+        except Exception as ex:
+            last_err = str(ex)
+            continue
+            
+    return f"⚠️ **Gemini API Generation Error**: Unable to generate dance reel script ({last_err}). Please check your Gemini API key."
+
+
 def call_gemini_api(api_key, creator_bytes=None, product_images=None, duration="30s", language="Hinglish", presentation_mode="Magic Transition", voice_tone="Relatable Bestie", category_hint="Auto-detect", price="₹499", meesho_code="s-18392841", notes="", remix_context=None, product_back_bytes=None, background_bytes=None, background_preset_desc="", brand_dupe_info=None, include_on_screen_text=False, affiliate_link="", **kwargs):
     # Handle parameter aliases
     if product_images is None and "product_bytes_list" in kwargs:
@@ -3181,12 +3605,13 @@ st.markdown("""
 
 # Top Level Navigation State
 NAV_RADAR = "🔥 Trends Radar"
-NAV_URL_PROD = "👗 Product Photo to Script"
-NAV_PROBLEM = "👠 Women's Problem Stories"
-NAV_FASHION = "👗 AI Fashion & Body Studio"
-NAV_HAUL = "📦 Batch Haul Studio (1-5 Finds)"
+NAV_URL_PROD = "👗 Product Photo"
+NAV_PROBLEM = "👠 Problem Stories"
+NAV_FASHION = "👗 Fashion Stylist"
+NAV_RUNWAY = "🚶‍♀️ Runway & 💃 Dance"
+NAV_HAUL = "📦 Batch Haul (1-5)"
 NAV_STUDIO = "🎬 Studio Workspace"
-NAV_REMIX = "🔗 Instagram Remixer"
+NAV_REMIX = "🔗 Remixer"
 
 if "active_nav_tab" not in st.session_state:
     st.session_state["active_nav_tab"] = NAV_RADAR
@@ -3194,6 +3619,8 @@ if "active_nav_tab" not in st.session_state:
 # Normalize previous longer titles if in session state
 if "Radar" in st.session_state["active_nav_tab"] or "Trends" in st.session_state["active_nav_tab"]:
     st.session_state["active_nav_tab"] = NAV_RADAR
+elif "Runway" in st.session_state["active_nav_tab"] or "Walk" in st.session_state["active_nav_tab"] or "Poses" in st.session_state["active_nav_tab"] or "Dance" in st.session_state["active_nav_tab"]:
+    st.session_state["active_nav_tab"] = NAV_RUNWAY
 elif "URL" in st.session_state["active_nav_tab"] or "Meesho" in st.session_state["active_nav_tab"] or "Product Photo" in st.session_state["active_nav_tab"] or "Photo to Video" in st.session_state["active_nav_tab"]:
     st.session_state["active_nav_tab"] = NAV_URL_PROD
 elif "Problem" in st.session_state["active_nav_tab"] or "Stories" in st.session_state["active_nav_tab"] or "Wardrobe" in st.session_state["active_nav_tab"] or "Hacks" in st.session_state["active_nav_tab"]:
@@ -3207,8 +3634,8 @@ elif "Remix" in st.session_state["active_nav_tab"]:
 elif "Studio" in st.session_state["active_nav_tab"] or "Director" in st.session_state["active_nav_tab"]:
     st.session_state["active_nav_tab"] = NAV_STUDIO
 
-# Render 7 prominent top navigation tab buttons
-col_n1, col_n2, col_n3, col_n4, col_n5, col_n6, col_n7 = st.columns(7)
+# Render 8 prominent top navigation tab buttons
+col_n1, col_n2, col_n3, col_n4, col_n5, col_n6, col_n7, col_n8 = st.columns(8)
 with col_n1:
     b_type = "primary" if st.session_state["active_nav_tab"] == NAV_RADAR else "secondary"
     if st.button(NAV_RADAR, use_container_width=True, type=b_type, key="top_nav_radar"):
@@ -3230,16 +3657,21 @@ with col_n4:
         st.session_state["active_nav_tab"] = NAV_FASHION
         st.rerun()
 with col_n5:
+    b_type = "primary" if st.session_state["active_nav_tab"] == NAV_RUNWAY else "secondary"
+    if st.button(NAV_RUNWAY, use_container_width=True, type=b_type, key="top_nav_runway"):
+        st.session_state["active_nav_tab"] = NAV_RUNWAY
+        st.rerun()
+with col_n6:
     b_type = "primary" if st.session_state["active_nav_tab"] == NAV_HAUL else "secondary"
     if st.button(NAV_HAUL, use_container_width=True, type=b_type, key="top_nav_haul"):
         st.session_state["active_nav_tab"] = NAV_HAUL
         st.rerun()
-with col_n6:
+with col_n7:
     b_type = "primary" if st.session_state["active_nav_tab"] == NAV_STUDIO else "secondary"
     if st.button(NAV_STUDIO, use_container_width=True, type=b_type, key="top_nav_studio"):
         st.session_state["active_nav_tab"] = NAV_STUDIO
         st.rerun()
-with col_n7:
+with col_n8:
     b_type = "primary" if st.session_state["active_nav_tab"] == NAV_REMIX else "secondary"
     if st.button(NAV_REMIX, use_container_width=True, type=b_type, key="top_nav_remix"):
         st.session_state["active_nav_tab"] = NAV_REMIX
@@ -5477,6 +5909,740 @@ elif st.session_state["active_nav_tab"] == NAV_HAUL:
                 key="btn_dl_haul_md"
             )
             st.text_area("Raw Markdown Content", value=haul_text, height=400, key="haul_raw_md_area")
+
+# ---------------------------------------------------------
+# TAB: 🚶‍♀️ Runway Walk & All-Women Dynamic Poses Studio
+# ---------------------------------------------------------
+elif st.session_state["active_nav_tab"] == NAV_RUNWAY:
+    st.markdown("### 🚶‍♀️ Runway Walk & 💃 Viral Dance Studio")
+    st.markdown(
+        "Choreograph cinematic female influencer runway catwalk struts or viral Instagram dance reels. "
+        "Select between **Catwalk Posing & SFX** or **Viral Dance & Hook-Steps (synchronized with real trending songs and glitch-free Google Flow prompts)**."
+    )
+
+    studio_choreo_mode = st.radio(
+        "🎭 Select Studio Choreography Format",
+        [
+            "🚶‍♀️ Cinematic Runway Walk & Dynamic Posing",
+            "💃 Viral Instagram Dance & Hook-Steps (With Real Trending Songs)"
+        ],
+        index=st.session_state.get("studio_choreo_mode_idx", 0),
+        horizontal=True,
+        key="studio_choreo_mode_radio"
+    )
+
+    if studio_choreo_mode == "🚶‍♀️ Cinematic Runway Walk & Dynamic Posing":
+        st.session_state["studio_choreo_mode_idx"] = 0
+        # 1. Interactive Visual Posing Choreography Bar
+    st.markdown("""
+    <div style="background:linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); border-radius:14px; padding:1.1rem 1.4rem; color:white; margin-bottom:1.5rem; box-shadow:0 4px 15px rgba(49, 46, 129, 0.2);">
+        <div style="font-weight:800; font-size:1.05rem; margin-bottom:0.6rem; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.5rem;">
+            <span>🚶‍♀️ 5-Step All-Women Runway Posing & SFX Choreography Chain</span>
+            <span style="font-size:0.75rem; background:#ec4899; color:white; padding:3px 10px; border-radius:999px; font-weight:700;">VIRAL RETENTION FLOW</span>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:0.6rem; font-size:0.82rem;">
+            <div style="background:rgba(255,255,255,0.08); padding:0.6rem 0.8rem; border-radius:8px; border-left:3px solid #ec4899;">
+                <div style="color:#f472b6; font-weight:700;">00:00 - 00:02</div>
+                <div style="font-weight:600; color:white;">🚶‍♀️ 1.3x Walk-In</div>
+                <div style="color:#cbd5e1; font-size:0.75rem;">🔊 Sub-Bass Whoosh</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.08); padding:0.6rem 0.8rem; border-radius:8px; border-left:3px solid #a855f7;">
+                <div style="color:#c084fc; font-weight:700;">00:02 - 00:06</div>
+                <div style="font-weight:600; color:white;">🤫 Lean-In Whisper</div>
+                <div style="color:#cbd5e1; font-size:0.75rem;">🫰 Finger Snap | Spoken Hook</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.08); padding:0.6rem 0.8rem; border-radius:8px; border-left:3px solid #38bdf8;">
+                <div style="color:#7dd3fc; font-weight:700;">00:06 - 00:15</div>
+                <div style="font-weight:600; color:white;">🌊 0.5x Ghera Twirl</div>
+                <div style="color:#cbd5e1; font-size:0.75rem;">✨ ASMR Fabric Wave</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.08); padding:0.6rem 0.8rem; border-radius:8px; border-left:3px solid #34d399;">
+                <div style="color:#6ee7b7; font-weight:700;">00:15 - 00:22</div>
+                <div style="font-weight:600; color:white;">⏳ Snatched Waist</div>
+                <div style="color:#cbd5e1; font-size:0.75rem;">💥 Pocket Reveal + Latkan</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.08); padding:0.6rem 0.8rem; border-radius:8px; border-left:3px solid #fbbf24;">
+                <div style="color:#fde047; font-weight:700;">00:22 - 00:30</div>
+                <div style="font-weight:600; color:white;">📸 1.2x Model Pause</div>
+                <div style="color:#cbd5e1; font-size:0.75rem;">📸 Shutter Click | CTA "WALK"</div>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # 2. Runway Configuration Controls
+    col_rw_left, col_rw_right = st.columns([1, 1])
+
+    with col_rw_left:
+        st.markdown("#### 1️⃣ Creator & Outfit Photos")
+        
+        # Creator Uploader + Sample
+        rw_creator_file = st.file_uploader(
+            "👤 Creator Face & Silhouette Reference (Optional)",
+            type=["jpg", "jpeg", "png", "webp"],
+            key="rw_creator_upload",
+            help="Locks exact facial identity, hair styling, skin undertone, and body proportions."
+        )
+        if not rw_creator_file and st.button("✨ Use Sample Creator Model", key="btn_rw_sample_creator"):
+            st.session_state["rw_creator_bytes"] = load_sample_file("sample_creator.jpg")
+            st.toast("Loaded sample creator profile!", icon="🌸")
+        
+        # Outfit Uploader + Sample
+        rw_product_file = st.file_uploader(
+            "👗 Meesho Outfit Photo (Catalog or Real Try-On)",
+            type=["jpg", "jpeg", "png", "webp"],
+            key="rw_prod_upload",
+            help="High-precision garment visual reference: locks cut, fabric, colors, prints, and flare."
+        )
+        
+        st.markdown("**Or 1-Click Sample Outfits:**")
+        col_s1, col_s2, col_s3, col_s4 = st.columns(4)
+        with col_s1:
+            if st.button("🥻 Anarkali", key="btn_rw_anarkali", use_container_width=True):
+                st.session_state["rw_prod_bytes"] = load_sample_file("sample_anarkali.jpg")
+                st.session_state["rw_outfit_title"] = "Royal Floral Silk Anarkali Suit Set"
+                st.session_state["rw_price"] = "₹649"
+                st.session_state["rw_code"] = "s-1839210"
+                st.session_state["rw_type_idx"] = 0
+                st.rerun()
+        with col_s2:
+            if st.button("✨ Kurti Set", key="btn_rw_kurti", use_container_width=True):
+                st.session_state["rw_prod_bytes"] = load_sample_file("sample_kurti_set.jpg")
+                st.session_state["rw_outfit_title"] = "Blue Floral Print Spaghetti Kurti & Sharara Set"
+                st.session_state["rw_price"] = "₹489"
+                st.session_state["rw_code"] = "s-1788444"
+                st.session_state["rw_type_idx"] = 0
+                st.rerun()
+        with col_s3:
+            if st.button("👗 Bodycon", key="btn_rw_bodycon", use_container_width=True):
+                st.session_state["rw_prod_bytes"] = load_sample_file("sample_wardrobe_hack.jpg")
+                st.session_state["rw_outfit_title"] = "Satin Cowl Neck Bodycon Evening Dress"
+                st.session_state["rw_price"] = "₹399"
+                st.session_state["rw_code"] = "s-2490182"
+                st.session_state["rw_type_idx"] = 1
+                st.rerun()
+        with col_s4:
+            if st.button("👙 Bralette", key="btn_rw_bralette", use_container_width=True):
+                st.session_state["rw_prod_bytes"] = load_sample_file("sample_bralette_set.jpg")
+                st.session_state["rw_outfit_title"] = "Lace Padded Longline Bralette & Shorts Set"
+                st.session_state["rw_price"] = "₹299"
+                st.session_state["rw_code"] = "s-992014"
+                st.session_state["rw_type_idx"] = 3
+                st.rerun()
+
+        # Resolved bytes
+        active_rw_creator = rw_creator_file.getvalue() if rw_creator_file else st.session_state.get("rw_creator_bytes")
+        active_rw_prod = rw_product_file.getvalue() if rw_product_file else st.session_state.get("rw_prod_bytes")
+
+        if active_rw_prod:
+            try:
+                st.image(active_rw_prod, caption="Active Runway Outfit", width=180)
+            except Exception:
+                pass
+
+    with col_rw_right:
+        st.markdown("#### 2️⃣ Walk, Pose & Audio Directives")
+
+        rw_delivery_mode = st.radio(
+            "🎵 Audio & Delivery Format",
+            [
+                "🎵 Pure Aesthetic Runway (Trending Song & Pure Poses — ZERO Voice-Over / No Talking Head)",
+                "🎙️ Spoken Voice-Over + Poses (Talking Review with 100% On-Camera Lip-Sync)"
+            ],
+            index=0,
+            key="rw_delivery_mode_choice",
+            help="Pure Aesthetic mode is tailored for trending Instagram Reels music with zero spoken words and dynamic on-screen text."
+        )
+        is_silent_mode = "ZERO Voice-Over" in rw_delivery_mode
+
+        if is_silent_mode:
+            st.info("🎵 **Trending Song Mode Active**: Influencer will NOT speak (closed lips & pure posing). Designed for applying trending Instagram songs without AI mouth distortion!")
+        else:
+            st.info("🎙️ **Voice-Over Mode Active**: Scene 1 has a 2s silent visual hook, followed by 100% on-camera talking head lip-sync with Neural AI Voice.")
+
+        rw_walk_style = st.selectbox(
+            "🚶‍♀️ Influencer Walk Archetype",
+            [
+                "👠 Power Runway Catwalk Strut (High-energy stride, fierce eye contact)",
+                "🌸 Graceful Ethnic Glide & Sway (Slow graceful steps, ghera/dupatta float)",
+                "☕ Casual Street Chic Walk (Effortless street swagger, looking around, smiling)",
+                "🕶️ Slow-Mo High-Fashion Model Walk (Ultra slow-motion model stride, dramatic pauses)"
+            ],
+            index=0,
+            key="rw_walk_choice"
+        )
+
+        rw_outfit_type = st.selectbox(
+            "👗 Outfit Category",
+            [
+                "🥻 Ethnic Kurti / Sharara / Anarkali Set",
+                "👗 Western Maxi / Midi / Bodycon Dress",
+                "✨ Saree / Festive Drape & Blouse",
+                "👚 Co-ord Set / Blazer & Trousers",
+                "👖 Casual Chic Top & Jeans / Skirt",
+                "✨ Festive Wedding / Party Wear Lehenga"
+            ],
+            index=st.session_state.get("rw_type_idx", 0),
+            key="rw_type_choice"
+        )
+
+        rw_music_vibe = st.selectbox(
+            "🎶 Recommended BGM Audio Vibe",
+            [
+                "🎧 Slowed + Reverb Runway Bass (Zara/H&M aesthetic)",
+                "🌸 Indian Flute & Sitar Lo-Fi Chill (Festive / Ethnic sets)",
+                "☕ French Cafe / Paris Girl Acoustic Lo-Fi (Casual chic)",
+                "🔥 High-Voltage Pop Beat Drop (Party wear / Glam)"
+            ],
+            index=0,
+            key="rw_music_choice"
+        )
+
+        rw_posing_focus = st.selectbox(
+            "🌟 Posing Sequence Choreography",
+            [
+                "🌟 Full 5-Step All-Women Posing Flow (Lean-in ➔ Twirl ➔ Snatched ➔ Pockets ➔ Pause)",
+                "🌊 Ghera & Fabric Wave Focus (Maximized 360° twirl & fabric ripple ASMR)",
+                "⏳ Snatched Waist & Silhouette Focus (Hourglass curve, belt pinch & pocket reveal)",
+                "🤫 Viral Secret Whisper & Gossip Focus (Audience lean-in & fourth-wall break)"
+            ],
+            index=0,
+            key="rw_pose_focus"
+        )
+
+        col_meta1, col_meta2 = st.columns(2)
+        with col_meta1:
+            rw_title = st.text_input("Product Title", value=st.session_state.get("rw_outfit_title", "Designer Flare Kurti & Sharara Set"), key="rw_title_input")
+            rw_price = st.text_input("Price (₹)", value=st.session_state.get("rw_price", "₹489"), key="rw_price_input")
+        with col_meta2:
+            rw_code = st.text_input("Meesho Code", value=st.session_state.get("rw_code", "s-1788444"), key="rw_code_input")
+            rw_affiliate = st.text_input("🔗 Product Affiliate / Buy Link", value="", key="rw_affiliate_input", placeholder="https://www.meesho.com/s/...")
+
+        rw_dur = render_duration_selector(key_prefix="rw_dur", default_val="30s", label="⏱️ Video Duration (10s - 60s)")
+
+        col_t1, col_t2 = st.columns(2)
+        with col_t1:
+            rw_ost = st.checkbox("🟡 Include On-Screen Bold Subtitles", value=True, key="rw_ost_toggle")
+        with col_t2:
+            rw_dupe = render_brand_dupe_selector(key_prefix="rw_dupe", meesho_price=rw_price if rw_price else "₹499")
+
+    st.markdown("---")
+    gen_rw_clicked = st.button("🚀 Generate Runway Walk & All-Women Posing Reel (With SFX + Prompts)", type="primary", use_container_width=True, key="btn_gen_runway")
+
+    if gen_rw_clicked:
+        if not env_key:
+            st.error("Please enter a valid Gemini API Key in the left sidebar.")
+        else:
+            with st.spinner("✨ Choreographing 5-Step All-Women Runway Walk, SFX Sound Cues & Kling Video Prompts..."):
+                res_rw = generate_runway_walk_script(
+                    duration=rw_dur,
+                    language="Hinglish (Natural Indian Social Tone)",
+                    voice_tone=voice_tone,
+                    walk_style=rw_walk_style,
+                    outfit_type=rw_outfit_type,
+                    garment_title=rw_title,
+                    price=rw_price,
+                    meesho_code=rw_code,
+                    background_preset_desc=active_bg_desc,
+                    creator_bytes=active_rw_creator,
+                    product_bytes=active_rw_prod,
+                    api_key=env_key,
+                    include_on_screen_text=rw_ost if not is_silent_mode else True,
+                    brand_dupe_info=rw_dupe,
+                    affiliate_link=rw_affiliate,
+                    music_vibe=rw_music_vibe,
+                    posing_focus=rw_posing_focus,
+                    delivery_mode="silent_aesthetic" if is_silent_mode else "spoken_voiceover"
+                )
+                if res_rw.startswith("❌") or res_rw.startswith("⚠️"):
+                    st.error(res_rw)
+                else:
+                    st.session_state["latest_runway_script"] = res_rw
+                    st.session_state["latest_runway_title"] = rw_title
+                    st.session_state["latest_runway_affiliate"] = rw_affiliate
+                    st.session_state["latest_runway_delivery_mode"] = "silent_aesthetic" if is_silent_mode else "spoken_voiceover"
+                    st.session_state["latest_runway_music_vibe"] = rw_music_vibe
+                    st.toast("🎉 Runway Walk & All-Women Posing Production Ready!", icon="🚶‍♀️")
+
+    # Display Runway Results
+    if "latest_runway_script" in st.session_state:
+        rw_script_text = st.session_state["latest_runway_script"]
+        rw_aff_link = st.session_state.get("latest_runway_affiliate", "")
+
+        st.markdown("---")
+        st.markdown("### 🎬 Production Package: Runway Walk & All-Women Poses")
+
+        rw_tab1, rw_tab2, rw_tab3, rw_tab4, rw_tab5 = st.tabs([
+            "🎬 5-Step Posing Script & SFX",
+            "🤖 Google Flow & Kling AI Prompts",
+            "⚡ Speed Ramping & CapCut Blueprint",
+            "🚀 Script-Linked SEO Studio",
+            "📥 Export & Download"
+        ])
+
+        with rw_tab1:
+            active_del_mode = st.session_state.get("latest_runway_delivery_mode", "silent_aesthetic" if is_silent_mode else "spoken_voiceover")
+            is_active_silent = active_del_mode == "silent_aesthetic" or "ZERO VOICE-OVER" in rw_script_text.upper() or "PURE AESTHETIC" in rw_script_text.upper()
+            
+            if is_active_silent:
+                st.success("🎵 **Pure Aesthetic Runway Mode (No Voice-Over)**: Choreographed specifically for trending Instagram Reel songs. Influencer does not speak, guaranteeing ZERO mouth distortion in AI video generation!")
+                
+                col_ig1, col_ig2 = st.columns([1.5, 1])
+                with col_ig1:
+                    st.markdown("##### 🎧 Recommended Instagram Audio Search Terms")
+                    cur_vibe = st.session_state.get("latest_runway_music_vibe", rw_music_vibe).split("(")[0].strip()
+                    st.markdown(f"- 🔍 Search in Instagram Reels Audio: **`{cur_vibe}`**")
+                    st.markdown("- 🔍 Alternative Vibes: **`Zara Runway Bass`** • **`Slowed Reverb Fashion`** • **`Indian Flute Lo-Fi Chill`** • **`Aesthetic Fashion Ramp Walk`**")
+                with col_ig2:
+                    st.markdown("##### ⚡ Cut-to-Beat Timestamps")
+                    st.markdown("`00:00` Beat Intro ➔ `00:02.5` Bass Drop ➔ `00:08` Twirl Chorus ➔ `00:16` Snare Hit ➔ `00:24` Outro Hold")
+                
+                with st.expander("🎙️ Prefer Spoken Voice-Over? Generate AI Voice"):
+                    render_voiceover_audio_studio(rw_script_text, key_prefix="rw_audio_fallback")
+                st.markdown("---")
+            else:
+                render_voiceover_audio_studio(rw_script_text, key_prefix="rw_audio")
+                st.markdown("---")
+            st.markdown(rw_script_text)
+
+        with rw_tab2:
+            st.markdown("#### 🤖 Copy-Ready Google Flow & Kling AI Video Prompts (With Camera Tracking & Locomotion Physics)")
+            st.info("💡 Every prompt includes Full-Length Tracking Pull-Back, exact walking speed, feet ground-contact physics, and the Avoid safety block.")
+            
+            lines = rw_script_text.splitlines()
+            in_p = False
+            cur_p = []
+            cnt = 0
+            for l in lines:
+                if "```text" in l or (l.strip() == "```" and in_p):
+                    if in_p:
+                        cnt += 1
+                        st.markdown(f"**Scene #{cnt} Runway Prompt:**")
+                        st.code("\n".join(cur_p).strip(), language="text")
+                        cur_p = []
+                        in_p = False
+                    else:
+                        in_p = True
+                elif in_p:
+                    cur_p.append(l)
+            if cnt == 0:
+                st.markdown("Prompts are displayed within the script breakdown in the Script tab above.")
+
+        with rw_tab3:
+            st.markdown("#### ⚡ Speed Ramping & Sound Design Blueprint (CapCut / InShot Ready)")
+            st.markdown("""
+            | Timestamp | Speed Multiplier | Visual Pose Action | SFX Sound Design Cue |
+            | :--- | :--- | :--- | :--- |
+            | **00:00 - 00:02** | **1.3x Fast Runway Walk** | Confident Catwalk Entry & Full Outfit Stride | 🔊 `[SFX: Cinematic Sub-Bass Drop + Deep Whoosh]` |
+            | **00:02 - 00:06** | **1.0x Normal Speed** | The Secret Whisper / Lean-In Close-Up (Spoken Hook) | 🫰 `[SFX: Crisp Finger-Snap / Clapper Click]` |
+            | **00:06 - 00:15** | **0.5x Ultra Slow-Motion** | 360° Ghera Twirl + ASMR Fabric Ripple Wave | ✨ `[SFX: Shimmer / Magic Bell Chime]` |
+            | **00:15 - 00:22** | **1.0x Normal Speed** | Snatched Waist Pinch + Pocket Surprise Reveal | 💥 `[SFX: Pop / Suction Sound]` |
+            | **00:22 - 00:30** | **1.2x Snap Cut** | High-Fashion Cross-Leg Model Pause & Bookmark Gesture | 📸 `[SFX: Camera Shutter Click x2]` |
+            """)
+            st.caption("🎬 **Editor's Note**: In CapCut or VN, split clip at 00:02, 00:06, 00:15, and 00:22, apply the speed curve above with Optical Flow smooth slow-mo.")
+
+        with rw_tab4:
+            render_script_linked_seo_studio(rw_script_text, key_prefix="runway_seo", affiliate_link=rw_aff_link)
+
+        with rw_tab5:
+            col_rw_dl1, col_rw_dl2 = st.columns(2)
+            with col_rw_dl1:
+                st.download_button(
+                    "📥 Download Runway Production Package (.md)",
+                    data=rw_script_text,
+                    file_name=f"meesho_runway_walk_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.md",
+                    mime="text/markdown",
+                    use_container_width=True,
+                    key="btn_dl_runway_md"
+                )
+            with col_rw_dl2:
+                rw_srt_data = generate_srt_from_script(rw_script_text)
+                st.download_button(
+                    "📥 Download Subtitles (.srt) for CapCut / Premiere",
+                    data=rw_srt_data,
+                    file_name=f"meesho_runway_subtitles_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.srt",
+                    mime="text/plain",
+                    use_container_width=True,
+                    key="btn_dl_runway_srt",
+                    help="Import directly into CapCut, InShot, or Premiere Pro to auto-sync subtitles on screen!"
+                )
+            st.text_area("Raw Markdown Content", value=rw_script_text, height=400, key="rw_raw_md_area")
+
+    else:
+        # =========================================================
+        # 💃 VIRAL INSTAGRAM DANCE & HOOK-STEPS STUDIO (WITH TRENDING SONGS)
+        # =========================================================
+        st.session_state["studio_choreo_mode_idx"] = 1
+
+        # 1. Interactive Visual Dance Choreography Bar
+        st.markdown("""
+        <div style="background:linear-gradient(135deg, #3b0764 0%, #1e1b4b 100%); border-radius:14px; padding:1.1rem 1.4rem; color:white; margin-bottom:1.5rem; box-shadow:0 4px 15px rgba(59, 7, 100, 0.2);">
+            <div style="font-weight:800; font-size:1.05rem; margin-bottom:0.6rem; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.5rem;">
+                <span>💃 5-Phase Viral Dance & Song-Sync Choreography Chain</span>
+                <span style="font-size:0.75rem; background:#ec4899; color:white; padding:3px 10px; border-radius:999px; font-weight:700;">VIRAL REELS RETENTION</span>
+            </div>
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:0.6rem; font-size:0.82rem;">
+                <div style="background:rgba(255,255,255,0.08); padding:0.6rem 0.8rem; border-radius:8px; border-left:3px solid #ec4899;">
+                    <div style="color:#f472b6; font-weight:700;">00:00 - 00:02</div>
+                    <div style="font-weight:600; color:white;">🎵 1.3x Beat Intro</div>
+                    <div style="color:#cbd5e1; font-size:0.75rem;">Shoulder Bounce Walk</div>
+                </div>
+                <div style="background:rgba(255,255,255,0.08); padding:0.6rem 0.8rem; border-radius:8px; border-left:3px solid #a855f7;">
+                    <div style="color:#c084fc; font-weight:700;">00:02 - 00:06</div>
+                    <div style="font-weight:600; color:white;">🔥 1.0x Beat Drop</div>
+                    <div style="color:#cbd5e1; font-size:0.75rem;">Signature Hook-Step</div>
+                </div>
+                <div style="background:rgba(255,255,255,0.08); padding:0.6rem 0.8rem; border-radius:8px; border-left:3px solid #38bdf8;">
+                    <div style="color:#7dd3fc; font-weight:700;">00:06 - 00:15</div>
+                    <div style="font-weight:600; color:white;">🌊 0.5x Chorus Spin</div>
+                    <div style="color:#cbd5e1; font-size:0.75rem;">360° Ghera Twirl</div>
+                </div>
+                <div style="background:rgba(255,255,255,0.08); padding:0.6rem 0.8rem; border-radius:8px; border-left:3px solid #34d399;">
+                    <div style="color:#6ee7b7; font-weight:700;">00:15 - 00:22</div>
+                    <div style="font-weight:600; color:white;">⏳ 1.0x Waist Sway</div>
+                    <div style="color:#cbd5e1; font-size:0.75rem;">Thumka & Fit Check</div>
+                </div>
+                <div style="background:rgba(255,255,255,0.08); padding:0.6rem 0.8rem; border-radius:8px; border-left:3px solid #fbbf24;">
+                    <div style="color:#fde047; font-weight:700;">00:22 - 00:30</div>
+                    <div style="font-weight:600; color:white;">📸 1.2x Freeze Pose</div>
+                    <div style="color:#cbd5e1; font-size:0.75rem;">Link Point & Save CTA</div>
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # Top-Level Mode Selector: Plan D vs Plan E vs Plan C
+        col_m_top1, col_m_top2 = st.columns([1.2, 1.8])
+        with col_m_top1:
+            dance_method_choice = st.radio(
+                "🎯 Dance Generation Method",
+                [
+                    "💃 Plan D: Pure Aesthetic Dance & Hook Steps (Without Lip-Sync — Strictly Closed Lips & Clean Face)",
+                    "✨ Plan E: Lyrical Expressions & Hook Mouthing (Photo-to-Video)",
+                    "🎥 Plan C: Motion Transfer & Character Swap (Video-to-Video V2V)"
+                ],
+                index=st.session_state.get("dance_method_idx", 0),
+                key="dance_method_radio",
+                help="Plan D gives 100% clean face with closed lips (0 mouth distortion). Plan E mouths viral hook lyrics. Plan C transfers motion & lip-sync from an uploaded video."
+            )
+        is_pure_dance = ("Plan D" in dance_method_choice or "Without Lip-Sync" in dance_method_choice)
+        is_v2v_mode = "Plan C" in dance_method_choice
+        if is_pure_dance:
+            st.session_state["dance_method_idx"] = 0
+        elif is_v2v_mode:
+            st.session_state["dance_method_idx"] = 2
+        else:
+            st.session_state["dance_method_idx"] = 1
+
+        with col_m_top2:
+            if is_v2v_mode:
+                st.info("🎥 **Plan C (Motion Transfer) Active**: Upload your reference dance reel video below (supports up to 60 seconds max). Google Flow & Kling V2V prompts will transfer the dancer's exact steps and lip-sync onto your Meesho model!")
+            elif is_pure_dance:
+                st.info("💃 **Plan D (Pure Dance - Without Lip-Sync) Active**: Generates 100% glitch-free dance prompts with closed-lip smiles, winks, and shoulder/waist movements. Zero mouth warping, zero jaw distortion, and universal compatibility with any background song!")
+            else:
+                st.info("✨ **Plan E (Lyrical Expressions) Active**: Generates photo-to-video dance prompts with playful hook lyric mouthing, smirks, and winks without needing any reference video!")
+
+        col_dance_left, col_dance_right = st.columns([1, 1])
+
+        with col_dance_left:
+            dance_video_file = None
+            if is_v2v_mode:
+                st.markdown("#### 🎬 Reference Dance Reel Video (Plan C)")
+                dance_video_file = st.file_uploader(
+                    "🎥 Upload Reference Dance Reel (.mp4 / .mov / .webm — Max 60s)",
+                    type=["mp4", "mov", "webm"],
+                    key="dance_ref_video_upload",
+                    help="Upload any viral Instagram dance reel clip (from 5 seconds up to 60 seconds max). Google Flow & Kling V2V will extract dance choreography, trajectory, and lip-sync from this video."
+                )
+                if dance_video_file:
+                    st.video(dance_video_file)
+                    st.success(f"✅ **Reference Video Loaded**: `{dance_video_file.name}` ({round(dance_video_file.size / (1024*1024), 2)} MB, up to 60s). Gemini will inspect this video to generate exact motion transfer prompts!")
+                else:
+                    st.caption("💡 *Tip: Download any viral Instagram dance reel (up to 60s MP4/MOV/WebM) and upload it here.*")
+                st.markdown("---")
+
+            st.markdown("#### 1️⃣ Creator & Outfit Photos")
+            dance_creator_file = st.file_uploader(
+                "👤 Creator Face & Body Reference (Optional)",
+                type=["jpg", "jpeg", "png", "webp"],
+                key="dance_creator_upload",
+                help="Locks 100% facial identity, hair styling, skin undertone, and body proportions."
+            )
+            if not dance_creator_file and st.button("✨ Use Sample Creator Model", key="btn_dance_sample_creator"):
+                st.session_state["dance_creator_bytes"] = load_sample_file("sample_creator.jpg")
+                st.toast("Loaded sample creator profile!", icon="🌸")
+
+            dance_product_file = st.file_uploader(
+                "👗 Meesho Outfit Photo (Catalog or Try-On)",
+                type=["jpg", "jpeg", "png", "webp"],
+                key="dance_prod_upload",
+                help="High-precision garment visual reference: locks fabric, colors, prints, and flare."
+            )
+
+            st.markdown("**Or 1-Click Sample Outfits:**")
+            col_ds1, col_ds2, col_ds3, col_ds4 = st.columns(4)
+            with col_ds1:
+                if st.button("🥻 Anarkali", key="btn_dance_anarkali", use_container_width=True):
+                    st.session_state["dance_prod_bytes"] = load_sample_file("sample_anarkali.jpg")
+                    st.session_state["dance_outfit_title"] = "Royal Floral Silk Anarkali Suit Set"
+                    st.session_state["dance_price"] = "₹649"
+                    st.session_state["dance_code"] = "s-1839210"
+                    st.session_state["dance_type_idx"] = 0
+                    st.rerun()
+            with col_ds2:
+                if st.button("✨ Kurti Set", key="btn_dance_kurti", use_container_width=True):
+                    st.session_state["dance_prod_bytes"] = load_sample_file("sample_kurti_set.jpg")
+                    st.session_state["dance_outfit_title"] = "Blue Floral Print Spaghetti Kurti & Sharara Set"
+                    st.session_state["dance_price"] = "₹489"
+                    st.session_state["dance_code"] = "s-1788444"
+                    st.session_state["dance_type_idx"] = 0
+                    st.rerun()
+            with col_ds3:
+                if st.button("👗 Bodycon", key="btn_dance_bodycon", use_container_width=True):
+                    st.session_state["dance_prod_bytes"] = load_sample_file("sample_wardrobe_hack.jpg")
+                    st.session_state["dance_outfit_title"] = "Satin Cowl Neck Bodycon Evening Dress"
+                    st.session_state["dance_price"] = "₹399"
+                    st.session_state["dance_code"] = "s-1894451"
+                    st.session_state["dance_type_idx"] = 1
+                    st.rerun()
+            with col_ds4:
+                if st.button("✨ Saree", key="btn_dance_saree", use_container_width=True):
+                    st.session_state["dance_prod_bytes"] = load_sample_file("sample_saree_shapewear.jpg")
+                    st.session_state["dance_outfit_title"] = "Kanjivaram Soft Silk Saree with Rich Pallu"
+                    st.session_state["dance_price"] = "₹799"
+                    st.session_state["dance_code"] = "s-1902881"
+                    st.session_state["dance_type_idx"] = 2
+                    st.rerun()
+
+            active_dance_creator = dance_creator_file.read() if dance_creator_file else st.session_state.get("dance_creator_bytes")
+            active_dance_prod = dance_product_file.read() if dance_product_file else st.session_state.get("dance_prod_bytes")
+
+            if active_dance_prod:
+                try:
+                    st.image(active_dance_prod, caption="Active Dance Outfit", width=180)
+                except Exception:
+                    pass
+
+        with col_dance_right:
+            st.markdown("#### 2️⃣ Trending Song & Dance Directives")
+
+            dance_song_choice = st.selectbox(
+                "🎵 Instagram Trending Song",
+                [
+                    "🔥 Tauba Tauba – Karan Aujla (Upbeat Punjabi / Bollywood Bounce)",
+                    "🥻 Gulabi Sadi – Sanju Rathod (Folk Fusion & Saree Sway)",
+                    "🌸 Sajni (Lo-Fi Chill) – Laapataa Ladies (Soft Romantic Sway)",
+                    "💃 Khalasi – Coke Studio Bharat (High-Energy Festive Drop)",
+                    "🕶️ APT. – ROSÉ & Bruno Mars (Global Pop Transition Step)",
+                    "⚡ Big Dawgs – Hanumankind (High-Octane Hip-Hop Drop)",
+                    "✨ Auto-Pick Today's #1 Trending Song (Gemini Live Trend Matcher)",
+                    "✍️ Custom Song (Enter Your Favorite Song Below)"
+                ],
+                index=0,
+                key="dance_song_choice",
+                help="Select from current viral reels tracks, auto-pick based on today's calendar context, or type your own song."
+            )
+
+            custom_song_input = ""
+            if "Custom Song" in dance_song_choice:
+                custom_song_input = st.text_input(
+                    "✍️ Song Title & Artist",
+                    value="",
+                    placeholder="e.g. Soni Soni – Darshan Raval",
+                    key="dance_custom_song_input"
+                )
+
+            dance_archetype = st.selectbox(
+                "💃 Dance & Hook-Step Archetype",
+                [
+                    "🕺 Upbeat Rhythm Bounce & Shoulder Pop (Bollywood / Punjabi)",
+                    "🥻 'Nazakat' Ghoomar Spin & Pallu/Dupatta Float (Festive & Wedding)",
+                    "🕶️ Aesthetic Hip-Pop & Heel-Tap (Zara / Urban Chic)",
+                    "🌸 Soft Lo-Fi Sway & Jhumka Touch (Aesthetic Romantic)",
+                    "⚡ 4-Count Fast Transition Dance & Save Gesture"
+                ],
+                index=0,
+                key="dance_archetype_choice"
+            )
+
+            dance_outfit_type = st.selectbox(
+                "👗 Garment Category",
+                [
+                    "🥻 Ethnic Kurti / Sharara / Anarkali Set",
+                    "👗 Western Maxi / Midi / Bodycon Dress",
+                    "✨ Saree / Festive Drape & Blouse",
+                    "👚 Co-ord Set / Blazer & Trousers",
+                    "👖 Casual Chic Top & Jeans / Skirt",
+                    "✨ Festive Wedding / Party Wear Lehenga"
+                ],
+                index=st.session_state.get("dance_type_idx", 0),
+                key="dance_type_choice"
+            )
+
+            col_dm1, col_dm2 = st.columns(2)
+            with col_dm1:
+                dance_title = st.text_input("Product Title", value=st.session_state.get("dance_outfit_title", "Designer Flare Kurti & Sharara Set"), key="dance_title_input")
+                dance_price = st.text_input("Price (₹)", value=st.session_state.get("dance_price", "₹489"), key="dance_price_input")
+            with col_dm2:
+                dance_code = st.text_input("Meesho Code", value=st.session_state.get("dance_code", "s-1788444"), key="dance_code_input")
+                dance_affiliate = st.text_input("🔗 Product Affiliate / Buy Link", value="", key="dance_affiliate_input", placeholder="https://www.meesho.com/s/...")
+
+            dance_dur = render_duration_selector(key_prefix="dance_dur", default_val="30s", label="⏱️ Video Duration (10s - 60s)")
+
+            col_dt1, col_dt2 = st.columns(2)
+            with col_dt1:
+                dance_ost = st.checkbox("🟡 Include On-Screen Bold Subtitles", value=True, key="dance_ost_toggle")
+            with col_dt2:
+                dance_dupe = render_brand_dupe_selector(key_prefix="dance_dupe", meesho_price=dance_price if dance_price else "₹499")
+
+        st.markdown("---")
+        gen_dance_clicked = st.button("🚀 Generate Viral Dance Reel & Google Flow Prompts (Song-Synced)", type="primary", use_container_width=True, key="btn_gen_dance")
+
+        if gen_dance_clicked:
+            if not env_key:
+                st.error("Please enter a valid Gemini API Key in the left sidebar.")
+            else:
+                with st.spinner("✨ Choreographing 5-Phase Dance Reel, Synchronizing Beat Drops & Generating Google Flow Prompts..."):
+                    active_video_bytes = dance_video_file.read() if (is_v2v_mode and dance_video_file) else None
+                    active_video_name = dance_video_file.name if (is_v2v_mode and dance_video_file) else ""
+
+                    res_dance = generate_dance_hookstep_script(
+                        duration=dance_dur,
+                        song_choice=dance_song_choice,
+                        custom_song_name=custom_song_input,
+                        dance_archetype=dance_archetype,
+                        outfit_type=dance_outfit_type,
+                        garment_title=dance_title,
+                        price=dance_price,
+                        meesho_code=dance_code,
+                        background_preset_desc=active_bg_desc,
+                        creator_bytes=active_dance_creator,
+                        product_bytes=active_dance_prod,
+                        api_key=env_key,
+                        include_on_screen_text=dance_ost,
+                        brand_dupe_info=dance_dupe,
+                        affiliate_link=dance_affiliate,
+                        dance_method=dance_method_choice,
+                        video_bytes=active_video_bytes,
+                        video_filename=active_video_name
+                    )
+                    if res_dance.startswith("❌") or res_dance.startswith("⚠️"):
+                        st.error(res_dance)
+                    else:
+                        st.session_state["latest_dance_script"] = res_dance
+                        st.session_state["latest_dance_title"] = dance_title
+                        st.session_state["latest_dance_affiliate"] = dance_affiliate
+                        st.session_state["latest_dance_song"] = custom_song_input if "Custom" in dance_song_choice else dance_song_choice
+                        st.session_state["latest_dance_method"] = dance_method_choice
+                        st.toast("🎉 Viral Dance Reel & Google Flow Prompts Ready!", icon="💃")
+
+        # Display Dance Results
+        if "latest_dance_script" in st.session_state:
+            dance_script_text = st.session_state["latest_dance_script"]
+            dance_aff_link = st.session_state.get("latest_dance_affiliate", "")
+
+            st.markdown("---")
+            st.markdown("### 🎬 Production Package: Viral Dance & Hook-Steps Reel")
+
+            d_tab1, d_tab2, d_tab3, d_tab4, d_tab5 = st.tabs([
+                "💃 Dance Script & Beat-Drop Timeline",
+                "🤖 Google Flow & Kling AI Dance Prompts",
+                "⚡ Speed Ramping & CapCut Blueprint",
+                "🚀 Script-Linked SEO Studio",
+                "📥 Export & Download"
+            ])
+
+            with d_tab1:
+                cur_m = st.session_state.get("latest_dance_method", dance_method_choice)
+                if "Plan C" in cur_m:
+                    st.success("🎥 **Plan C (Motion Transfer & Character Swap Active)**: Use these Google Flow / Kling V2V prompts with any viral dance reel to transfer the exact choreography & lip-sync onto your Meesho model!")
+                elif "Plan D" in cur_m or "Without Lip-Sync" in cur_m:
+                    st.success("💃 **Plan D (Pure Dance - Without Lip-Sync Active)**: Strictly closed-lip confident smiles and pure choreography dynamics. Zero mouth distortion, zero jaw warping, and 100% photorealistic face!")
+                else:
+                    st.success("✨ **Plan E (Lyrical Expressions & Hook Mouthing Active)**: Influencer subtly mouths the hook lyric at 00:02 and gives playful smirks/winks on beat drops with zero AI mouth distortion!")
+                
+                col_d_info1, col_d_info2 = st.columns([1.5, 1])
+                with col_d_info1:
+                    st.markdown("##### 🎧 Selected Trending Instagram Audio")
+                    sel_song = st.session_state.get("latest_dance_song", dance_song_choice)
+                    st.markdown(f"- 🎵 Track: **`{sel_song.split('(')[0].strip()}`**")
+                    st.markdown(f"- 🔍 Search in Instagram Audio: **`{sel_song.split('–')[0].replace('🔥','').replace('🥻','').replace('🌸','').replace('💃','').replace('🕶️','').replace('⚡','').strip()}`**")
+                with col_d_info2:
+                    st.markdown("##### ⚡ Cut-to-Beat Timestamps")
+                    st.markdown("`00:00` Beat Intro ➔ `00:02` Hook Drop ➔ `00:08` Chorus Twirl ➔ `00:15` Waist Sway ➔ `00:22` Freeze Pose")
+                st.markdown("---")
+                st.markdown(dance_script_text)
+
+            with d_tab2:
+                cur_m = st.session_state.get("latest_dance_method", dance_method_choice)
+                if "Plan C" in cur_m:
+                    st.markdown("#### 🎥 Copy-Ready Google Flow & Kling Video-to-Video (V2V) Motion Transfer Prompts")
+                    st.info("💡 **How to execute V2V**: (1) Upload your reference video into Google Flow (Veo) or Kling AI ➔ (2) Upload your Creator Reference and Meesho Outfit photo ➔ (3) Copy-paste the V2V prompt below.")
+                    if dance_video_file:
+                        with st.expander("▶️ Watch Uploaded Reference Dance Video", expanded=True):
+                            st.video(dance_video_file)
+                else:
+                    st.markdown("#### 🤖 Copy-Ready Google Flow & Kling AI Dance Prompts (With Biomechanics Physics Lock)")
+                    st.info("💡 Prompts include strict Biomechanical Kinematics, stationary foot pivot on twirls, realistic cloth simulation, and negative constraints to prevent limb morphing.")
+                
+                lines = dance_script_text.splitlines()
+                in_p = False
+                cur_p = []
+                cnt = 0
+                for l in lines:
+                    if "```text" in l or (l.strip() == "```" and in_p):
+                        if in_p:
+                            cnt += 1
+                            st.markdown(f"**Scene #{cnt} Dance Prompt:**")
+                            st.code("\n".join(cur_p).strip(), language="text")
+                            cur_p = []
+                            in_p = False
+                        else:
+                            in_p = True
+                    elif in_p:
+                        cur_p.append(l)
+                if cnt == 0:
+                    st.markdown("Prompts are displayed within the script breakdown in the Script tab above.")
+
+            with d_tab3:
+                st.markdown("#### ⚡ Speed Ramping & Sound Design Blueprint (CapCut / InShot Ready)")
+                st.markdown("""
+                | Timestamp | Speed Multiplier | Dance Movement | Beat / Audio Cue |
+                | :--- | :--- | :--- | :--- |
+                | **00:00 - 00:02** | **1.3x Fast Entry** | Rhythmic Walk-In & Shoulder Bounce | Beat Intro Rhythm |
+                | **00:02 - 00:06** | **1.0x Normal Speed** | Viral Signature Hook-Step (Waist Sway / Thumka) | 🔥 First Beat Drop |
+                | **00:06 - 00:15** | **0.5x Ultra Slow-Mo** | 360° Chorus Twirl & ASMR Flare Cascade | 🌊 Main Chorus Drop |
+                | **00:15 - 00:22** | **1.0x Normal Speed** | Snatched Waist Pinch & Rhythmic Sway | ✨ Rhythm Groove |
+                | **00:22 - 00:30** | **1.2x Snap Cut** | Beat-Stop Model Freeze Frame & Link Pointer | 📸 Beat Cut / Clapper |
+                """)
+                st.caption("🎬 **CapCut Editor's Guide**: Cut clips at 00:02, 00:06, 00:15, and 00:22. Apply Optical Flow smooth slow-mo on the 00:06-00:15 twirl.")
+
+            with d_tab4:
+                render_script_linked_seo_studio(dance_script_text, key_prefix="dance_seo", affiliate_link=dance_aff_link)
+
+            with d_tab5:
+                col_dl_d1, col_dl_d2 = st.columns(2)
+                with col_dl_d1:
+                    st.download_button(
+                        "📥 Download Dance Production Package (.md)",
+                        data=dance_script_text,
+                        file_name=f"meesho_dance_reel_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.md",
+                        mime="text/markdown",
+                        use_container_width=True,
+                        key="btn_dl_dance_script"
+                    )
+                with col_dl_d2:
+                    dance_srt_data = generate_srt_from_script(dance_script_text)
+                    st.download_button(
+                        "📥 Download Subtitles (.srt) for CapCut / Premiere",
+                        data=dance_srt_data,
+                        file_name=f"meesho_dance_subtitles_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.srt",
+                        mime="text/plain",
+                        use_container_width=True,
+                        key="btn_dl_dance_srt",
+                        help="Import directly into CapCut, InShot, or Premiere Pro to auto-sync subtitles on screen!"
+                    )
+                st.text_area("Raw Markdown Content", value=dance_script_text, height=400, key="dance_raw_md_area")
 
 # ---------------------------------------------------------
 # Footer Information
