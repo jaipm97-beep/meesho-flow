@@ -14,6 +14,14 @@ from PIL import Image
 import streamlit as st
 from dotenv import load_dotenv
 from urllib.parse import quote_plus
+from visual_attention_engine import (
+    VisualMode,
+    VisualAttentionEngine,
+    render_visual_mode_selector,
+    render_why_watch_next_card,
+    render_studio_visual_attention_banner,
+    render_section_why_watch_next_summary
+)
 
 warnings.filterwarnings("ignore", message=".*use_container_width.*")
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -38,6 +46,15 @@ def get_safe_secret(key: str, default: str = "") -> str:
     except Exception:
         pass
     return default
+
+def get_active_gemini_key() -> str:
+    """Safely retrieves the active Gemini API key from session state, environment, or secrets."""
+    key = st.session_state.get("gemini_api_key", "")
+    if not key:
+        key = os.getenv("GEMINI_API_KEY", "")
+    if not key:
+        key = get_safe_secret("GEMINI_API_KEY", "")
+    return key.strip() if key else ""
 
 # ---------------------------------------------------------
 # Streamlit Page Config & Custom Styling
@@ -663,7 +680,7 @@ Each JSON object must have these exact keys:
 - "title": catchy trend concept title (e.g. "Navratri Garba Ready Kalidar Under ₹599")
 - "hook": high-converting spoken 3-second opening hook in natural Hinglish
 - "concept": visual action breakdown in 1-2 sentences
-- "recommended_format": string (e.g. "🪄 Magic Transition", "💡 Problem ➔ Solution Hack", "📦 Zivame/Clovia Review", "👗 Direct Try-On")
+- "recommended_format": string (e.g. "📦 Unbox & Hold ➔ Throw/Snap Try-On", "👗 Direct Try-On", "🪄 Magic Transition", "💡 Problem ➔ Solution Hack", "📦 Zivame/Clovia Review")
 - "recommended_duration": "⚡ 10s" or "⚡ 15-20s" or "🎬 30s" or "⏳ 45s" or "⏳ 60s"
 - "category": high-level category string ("Festive & Ethnic", "Western & Casuals", "Sarees & Blouses", "Intimates & Shapewear", "Wardrobe Hacks")
 - "hook_score": string like "99/100", "98/100", "97/100"
@@ -684,7 +701,7 @@ Return ONLY the JSON array, with no Markdown formatting or code fencing.
         }
     }
     
-    candidate_models = ["gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-flash-latest", "gemini-3.7-flash"]
+    candidate_models = ["gemini-3.5-flash-lite", "gemini-3.6-flash", "gemini-flash-latest", "gemini-3.7-flash"]
     last_err = ""
     
     for model in candidate_models:
@@ -1338,6 +1355,7 @@ def get_duration_pacing_tier(duration_str: str) -> dict:
         "max_words": max_words,
         "tier_id": tier_id,
         "tier_name": tier_name,
+        "label": tier_name,
         "story_arc": story_arc,
         "scene_count": scene_count,
         "tier_guidelines": tier_guidelines,
@@ -1679,8 +1697,13 @@ MANDATORY OUTPUT STRUCTURE (EXACT HEADERS):
 5. ### 🎬 SCENE-BY-SCENE PRODUCTION SCRIPT:
    Detailed scenes with timestamps, visual directions, spoken dialogue, and ⏱️ Pacing Check: [X Words | ~Y.Ys | 100% Speakable ✅]
 
-6. ### 🤖 GOOGLE FLOW & KLING AI VIDEO PROMPTS:
-   Copy-ready 8C prompts with 3-Point Consistency Lock.
+6. ### 🤖 GOOGLE FLOW & KLING AI VIDEO PROMPTS (14-POINT MASTER LOCK):
+   Copy-ready prompts for every scene formatted with the 14-Point Master Lock:
+   - 8K UHD Cinematography Standard (Arri Alexa Mini LF, 35mm f/1.8, authentic skin pores & peach fuzz, real fabric gravity drape)
+   - Duchenne Smile & Real Facial Micro-Expressions (smiling eyes crinkling at corners, dynamic syllable articulation, no frozen mouth)
+   - Camera Motion & Speed Ramping (1.0x entry ➔ 0.4x slow-mo 120fps glide ➔ 1.5x snap cut)
+   - Synchronized Foley SFX Timeline (-8dB dialogue audio ducking)
+   - Identity & Garment Locks with mandatory 'Avoid:' negative safety block.
 
 7. ### 🚀 SCRIPT-LINKED SEO SUITE:
    Instagram Caption, 3-Tier Hashtags, Alt-Text, YouTube Chapters, Meta Tags, and WhatsApp Deal Card.
@@ -1693,7 +1716,7 @@ MANDATORY OUTPUT STRUCTURE (EXACT HEADERS):
         "generationConfig": {"temperature": 0.75, "topP": 0.95, "maxOutputTokens": 8192}
     }
     
-    candidate_models = ["gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-flash-latest", "gemini-3.7-flash"]
+    candidate_models = ["gemini-3.5-flash-lite", "gemini-3.6-flash", "gemini-flash-latest", "gemini-3.7-flash"]
     last_err = ""
     for model in candidate_models:
         api_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
@@ -1884,52 +1907,56 @@ render_brand_dupe_comparator = render_brand_dupe_selector
 # Studio Voice-Over Audio Synthesis & Extraction Engine
 # ---------------------------------------------------------
 def extract_spoken_dialogue(script_text: str) -> str:
-    """Extracts pure continuous spoken lines from generated script for audio synthesis."""
+    """Extracts all spoken voice-over dialogue from script for audio synthesis."""
     if not script_text:
         return ""
-    # 1. Try to find MASTER VOICE-OVER section
-    master_match = re.search(r'MASTER\s*VOICE-OVER[^\n]*\n(?:[^\n]*\n){0,4}["“]([^"”]+)["”]', script_text, re.IGNORECASE)
+
+    # 1. Look for blockquote inside TAB 5 (Master Uncut Voice-Over / Transcript)
+    tab5_match = re.search(r'#+\s*[^\n]*TAB\s*5[^\n]*\n([\s\S]*?)(?=#+\s*[^\n]*TAB|\Z)', script_text, re.IGNORECASE)
+    if tab5_match:
+        t5_body = tab5_match.group(1)
+        quote_blocks = re.findall(r'>\s*["“*]?([^"\n\r”*]+(?:\n>[^\n]+)*)["”*]?', t5_body)
+        for qb in quote_blocks:
+            clean = " ".join([l.strip().lstrip('>').strip(' "*“”') for l in qb.splitlines() if l.strip()]).strip()
+            if len(clean) > 15 and not any(x in clean.lower() for x in ["mode:", "status:", "disabled", "silent visual"]):
+                return clean
+
+    # 2. Look for explicit MASTER VOICE-OVER or MASTER TRANSCRIPT section anywhere
+    master_match = re.search(r'(?:MASTER\s*(?:CONTINUOUS\s*)?VOICE[\s-]*OVER|MASTER\s*UNCUT\s*TRANSCRIPT|MASTER\s*TRANSCRIPT)[^\n]*\n+([\s\S]*?)(?=---|###|##|\Z)', script_text, re.IGNORECASE)
     if master_match:
-        text = master_match.group(1).strip()
-        text = re.sub(r'\[\s*\d+:\d+[^\]]*\]', '', text).strip()
-        if len(text) > 10:
-            return text
-        
-    master_section = re.search(r'MASTER\s*VOICE-OVER[^\n]*\n+([\s\S]*?)(?=---|🎬\s*SCENE|##|\Z)', script_text, re.IGNORECASE)
-    if master_section:
-        raw_lines = master_section.group(1).split('\n')
         lines = []
-        for line in raw_lines:
-            l = line.strip().strip('"').strip('“').strip('”')
-            if not l or l.startswith(('⏱️', 'Total', 'Word', '-', '*', '#', '=', 'Target', 'Audio Timing', '>')):
-                if l.startswith('>') and len(l) > 10:
-                    lines.append(l.lstrip('>').strip().strip('"'))
+        for l in master_match.group(1).splitlines():
+            l_str = l.strip().lstrip('>').strip(' "*“”')
+            if not l_str or l_str.startswith(('⏱️', 'Total', 'Word', 'Target', 'Calculated', 'Tone', 'Audio', '-', '*', '#')):
                 continue
-            if any(k in l.lower() for k in ["no spoken voice", "trending beat drop", "whoosh cue", "music intro", "zero spoken voice"]):
+            if any(x in l_str.lower() for x in ["disabled", "no spoken", "status:", "seconds", "wps"]):
                 continue
-            lines.append(l)
+            lines.append(l_str)
         if lines:
-            text = " ".join(lines).strip()
-            text = re.sub(r'\[\s*\d+:\d+[^\]]*\]', '', text).strip()
-            if len(text) > 10:
-                return text
-            
-    # 2. Extract scene-by-scene voice-over lines (skipping silent Scene 1 markers)
-    vo_matches = re.findall(r'(?:VOICE-OVER|Spoken Voice-Over|Voice-Over)[^:]*:\s*["“]?([^"\n\r”]+)["”]?', script_text, re.IGNORECASE)
+            res = " ".join(lines).strip()
+            res = re.sub(r'\[\s*\d+:\d+[^\]]*\]', '', res).strip()
+            if len(res) > 10:
+                return res
+
+    # 3. Scene-by-scene extraction from TAB 2 or main script:
+    # Supports: Spoken Dialogue, Spoken Words, Spoken Voice-Over, VOICE-OVER, Dialogue
+    vo_matches = re.findall(r'(?:Spoken\s*Dialogue|Spoken\s*Voice[\s-]*Over|Spoken\s*Words|VOICE[\s-]*OVER|Dialogue)[^:\n]*:\s*["“*]?([^"\n\r”*]+)["”*]?', script_text, re.IGNORECASE)
     if vo_matches:
         clean_lines = []
         for m in vo_matches:
-            c = m.strip().strip('"').strip('“').strip('”').strip('*').strip()
-            if any(k in c.lower() for k in ["no spoken voice", "none -", "beat drop", "whoosh", "spoken words: 0", "silent visual", "music intro"]):
+            c = m.strip().strip('"*“”').strip()
+            if any(k in c.lower() for k in ["no spoken", "none", "beat drop", "whoosh", "silent", "music intro", "voice-over off", "zero spoken"]):
+                continue
+            if any(k in c.lower() for k in ["seconds", "word count", "calculated speed", "wps", "pacing check", "duration:"]):
                 continue
             if len(c) > 3:
                 clean_lines.append(c)
         if clean_lines:
             return " ".join(clean_lines)
-            
-    # 3. Fallback: Strip markdown headers and quotes
-    cleaned = re.sub(r'#.*|\*.*|```[\s\S]*?```', '', script_text)
-    return " ".join([l.strip() for l in cleaned.split('\n') if len(l.strip()) > 10])[:400].strip()
+
+    # 4. Fallback: Strip markdown headers
+    cleaned = re.sub(r'#.*|```[\s\S]*?```', '', script_text)
+    return " ".join([l.strip().lstrip('*- ').strip('"') for l in cleaned.split('\n') if len(l.strip()) > 15 and not l.strip().startswith(('|', '>'))])[:400].strip()
 
 def generate_studio_voiceover_audio(spoken_text: str, voice_name: str = "hi-IN-SwaraNeural", include_silent_hook_pause: bool = True) -> bytes:
     """
@@ -2580,7 +2607,12 @@ MANDATORY HAUL OUTPUT STRUCTURE:
 """
 
     user_prompt += """
-4. Google Flow 8C Prompts for every scene with Garment Lock per item and mandatory 'Avoid:' negative safety block.
+4. Google Flow 14-Point Master Lock Prompts for every scene with:
+   - 8K UHD Cinematography standard (Arri Alexa Mini LF, 35mm f/1.8, authentic skin pores & peach fuzz, realistic cloth gravity physics)
+   - Duchenne Smile & Real Facial Micro-Expressions (smiling eyes crinkling, natural syllable articulation, no frozen mouth or plastic grin)
+   - Speed Ramping Choreography (1.0x entry ➔ 0.4x slow-mo 120fps glide ➔ 1.5x snap cut)
+   - Synchronized Foley SFX Timeline (-8dB dialogue audio ducking)
+   - Garment Lock per item and mandatory 'Avoid:' negative safety block.
 5. 🚀 SCRIPT-LINKED INSTAGRAM & YOUTUBE SHORTS SEO SUITE:
    - Instagram Caption listing all items with item numbers, prices, and DM trigger keyword 'HAUL'.
    - YouTube Shorts Video Chapters matching exact timestamps of each outfit reveal.
@@ -2595,7 +2627,7 @@ MANDATORY HAUL OUTPUT STRUCTURE:
         "generationConfig": {"temperature": 0.75, "topP": 0.95, "maxOutputTokens": 8192}
     }
 
-    candidate_models = ["gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-flash-latest", "gemini-3.7-flash"]
+    candidate_models = ["gemini-3.5-flash-lite", "gemini-3.6-flash", "gemini-flash-latest", "gemini-3.7-flash"]
     last_err = ""
     for model in candidate_models:
         api_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
@@ -2710,18 +2742,22 @@ CRITICAL VIRAL 5-STEP STRUCTURE:
    - ### 📲 1-CLICK WHATSAPP & TELEGRAM AFFILIATE DEAL CARD:
      * Complete formatted deal card with title, key benefit, price, and Meesho code.
 
-CONSISTENCY LOCK RULES (MANDATORY IN EVERY SCENE PROMPT):
+CONSISTENCY & 14-POINT MASTER LOCK RULES (MANDATORY IN EVERY SCENE PROMPT):
 - 'Identity & Anatomy Lock: REFERENCE IMAGE 1 (CREATOR) - Lock exact facial identity, hair styling, body shape, silhouette, height, and natural body proportions across all cuts without morphing or warping.'
-- 'Garment Lock: REFERENCE IMAGE 2 (PRODUCT FRONT) - Lock exact garment cut, fabric, color, prints, and transformed drape.'
+- 'Garment Lock: REFERENCE IMAGE 2 (PRODUCT FRONT) - Lock exact garment cut, fabric, color, prints, and authentic transformed drape/gravity physics.'
 - 'Environment Lock: {bg_lock} - Lock room architecture and background elements across all cuts.'
-- In every scene prompt, the 'Avoid:' block MUST include: 'no face swapping, no morphing facial identity, no changing body shape, no warping body proportions, no shifting waist or bust size, no inconsistent height, no fluctuating skin tone, no altering dress colors, no changing fabric patterns, no inconsistent neckline, no background shifts'.
+- '8K Ultra-Photorealistic Visual Lock: Master shot on Arri Alexa Mini LF, 35mm prime f/1.8 lens, shallow depth of field, 8K UHD resolution, realistic skin micro-pores, natural light reflections, zero AI plastic smoothing.'
+- 'Duchenne Smile & Facial Micro-Expressions: Authentic Duchenne smile with smiling eyes crinkling, relatable problem-to-relief facial progression, natural speech articulation matching spoken syllables, zero frozen mouth or fake grin.'
+- 'Camera Motion & Speed Ramping: Choreographed Speed Ramping (00:00-00:01s: 1.0x problem hook ➔ 00:01-00:02.5s: 0.5x slow-mo hack demonstration ➔ 00:02.5-00:04s: 1.5x triumphant reveal).'
+- 'Synchronized SFX Timeline: Exact Foley sound cues (gasp, zipper glide, fabric snap, chime) with -8dB background music ducking during spoken lines.'
+- In every scene prompt, the 'Avoid:' block MUST include: 'no face swapping, no morphing facial identity, no changing body shape, no warping body proportions, no shifting waist or bust size, no inconsistent height, no fluctuating skin tone, no waxy skin, no frozen mouth smile, no altering dress colors, no changing fabric patterns, no inconsistent neckline, no background shifts'.
 
 ANTI-CLICHÉ & DIVERSITY RULE:
 - Create fresh, authentic conversational spoken Hindi/Hinglish lines. Never use generic or robotic templates.
 
 TERMINOLOGY & SAFETY RULES:
 - Explicitly use authentic terms: bra, panty, shapewear, dress tape, racerback clips, anti-chafing shorts, stick-on bra, boob tape, etc.
-- In every scene Google Flow prompt, format strictly with 8C structure, Environment Lock, and mandatory 'Avoid:' negative safety block.
+- In every scene Google Flow prompt, format strictly with 14-Point Master Lock structure, Environment Lock, and mandatory 'Avoid:' negative safety block.
 - Deliver full Script-Linked Instagram & YouTube Shorts SEO Suite with ManyChat keyword 'HACK'.
 """
     contents_parts.append({"text": user_prompt})
@@ -2732,7 +2768,7 @@ TERMINOLOGY & SAFETY RULES:
         "generationConfig": {"temperature": 0.75, "topP": 0.95, "maxOutputTokens": 8192}
     }
     
-    candidate_models = ["gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-flash-latest", "gemini-3.7-flash"]
+    candidate_models = ["gemini-3.5-flash-lite", "gemini-3.6-flash", "gemini-flash-latest", "gemini-3.7-flash"]
     last_err = ""
     for model in candidate_models:
         api_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
@@ -2872,12 +2908,16 @@ MANDATORY 5-STEP ALL-WOMEN POSING STRUCTURE:
    - Scene 3 [00:06 - 00:15]: The 360° Ghera Twirl & ASMR Fabric Ripple Wave (0.5x Ultra Slow-Motion | ✨ SFX: Shimmer Chime | 360° orbital camera pan, ghera cascade, dupatta float)
    - Scene 4 [00:15 - 00:22]: Snatched Waist Pinch & Pocket Surprise Reveal ("It has pockets!") + Back-Tie Latkan Flip (1.0x Speed | 💥 SFX: Pop Sound | Waist cinch, real-life fit check)
    - Scene 5 [00:22 - 00:30]: High-Fashion Cross-Leg Model Pause + Hair Tuck + Save Bookmark Gesture (1.2x Speed | 📸 SFX: Camera Shutter Click x2 | Pointing to save button, CTA comment 'WALK' for link)
-3. Copy-Ready Google Flow & Kling AI Video Prompts for every scene:
+3. Copy-Ready Google Flow & Kling AI Video Prompts (14-Point Master Lock) for every scene:
    - Put each prompt inside a ```text code block for one-click copying.
+   - 8K UHD Cinematography Standard: Arri Alexa Mini LF, 35mm prime f/1.8 lens, shallow depth of field, photorealistic skin micro-pores, authentic fabric gravity drape and wave physics.
+   - Facial Micro-Expressions & Duchenne Smile: Authentic smiling eyes crinkling, candid warmth, editorial confidence, zero frozen mouth or plastic grin.
+   - Speed Ramping & Motion Choreography: Direct explicit speed ramp curves (1.3x entry ➔ 0.4x slow-mo 120fps twirl ➔ 1.2x bookmark pose).
+   - Synchronized Foley SFX Timeline: Foley cues (heel strike, fabric whoosh, shimmer chime, shutter click) with -8dB audio ducking during speech.
    - Full-length tracking pull-back shot maintaining matching walking velocity (1.2 m/s).
    - Locomotion Mechanics: natural human walking gait, feet firmly on ground.
    - Lip Delivery: {'STRICTLY SILENT. Creator has closed lips, warm confident smile, editorial gaze. Mouth is NOT moving. Zero talking head.' if is_silent_mode else '100% on-camera lip-sync for speaking scenes from 00:02 onwards.'}
-   - Mandatory Avoid Block: 'no sliding feet, no slipping shoes, no floating heels, no distorted gait, no third leg, no foot morphing, no disappearing ankles, no morphing face, no inconsistent body shape' + (', no speaking, no talking, no moving lips, no open mouth, no talking head, no speech articulation' if is_silent_mode else '')
+   - Mandatory Avoid Block: 'no sliding feet, no slipping shoes, no floating heels, no distorted gait, no third leg, no foot morphing, no disappearing ankles, no morphing face, no waxy skin, no inconsistent body shape' + (', no speaking, no talking, no moving lips, no open mouth, no talking head, no speech articulation' if is_silent_mode else '')
 4. 🚀 SCRIPT-LINKED INSTAGRAM & YOUTUBE SHORTS SEO SUITE:
    - Hook-Sync Instagram Caption ({'first 125 chars matched to visual hook / text overlay' if is_silent_mode else 'first 125 chars matched to spoken dialogue'})
    - 3-Tier Targeted Hashtags (#MeeshoHaul #RunwayWalk #LookbookReels ...)
@@ -2894,7 +2934,7 @@ MANDATORY 5-STEP ALL-WOMEN POSING STRUCTURE:
         "generationConfig": {"temperature": 0.75, "topP": 0.95, "maxOutputTokens": 8192}
     }
     
-    candidate_models = ["gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-flash-latest", "gemini-3.7-flash"]
+    candidate_models = ["gemini-3.5-flash-lite", "gemini-3.6-flash", "gemini-flash-latest", "gemini-3.7-flash"]
     last_err = ""
     for model in candidate_models:
         api_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
@@ -3132,11 +3172,15 @@ MANDATORY STRUCTURE:
      * Mid-Track Rhythm / Transition: Rhythmic waist sway, thumka & fit check, snatched waist curve, playful eye contact (1.0x Speed).
      * If duration >= 45s: Extended Hook Step 2 Climax with dual hand gestures, high-energy foot pivots, and second beat-drop choreography.
      * Outro Climax (Final 4-8s up to {duration}): Beat-stop freeze pose, playful wink, pointing down to Instagram save/bookmark button with CTA 'DANCE' (1.2x Snap Cut).
-3. Copy-Ready Google Flow & Kling AI Video Prompts for every scene:
+3. Copy-Ready Google Flow & Kling AI Video Prompts (14-Point Master Lock) for every scene:
    - Put each prompt inside a ```text code block for one-click copying.
+   - 8K UHD Cinematography Standard: Arri Alexa Mini LF, 35mm prime f/1.8 lens, shallow depth of field, photorealistic skin micro-pores, authentic fabric gravity drape and wave ripples.
+   - Facial Micro-Expressions & Duchenne Smile: Authentic smiling eyes crinkling, candid musical warmth, playful smirks, zero frozen mouth or plastic grin.
+   - Speed Ramping & Motion Choreography: Precise speed ramp curves (1.3x intro walk ➔ 0.4x slow-mo 120fps twirl ➔ 1.2x beat freeze).
+   - Synchronized SFX Timeline: Exact beat drop accents and sub-bass impacts.
    {'- Format as Video-to-Video (V2V) Character & Motion Transfer Prompts: track skeletal kinematics, trajectory, and mouth articulation while reskinning model and Meesho outfit.' if is_v2v_motion else ('- Format as Pure Dance Prompts (Without Lip-Sync): STRICTLY CLOSED LIPS, radiant model smile, zero mouthing words, stationary foot pivot on twirls.' if is_pure_dance else '- Format as Photo-to-Video Prompts with Lyrical Expressions: subtle mouthing on Scene 2 hook lyric, closed lips with playful smirk on other scenes, stationary foot pivot on twirls.')}
    - Biomechanical Kinematics Lock: natural human dance movements, stationary foot pivot on twirls, authentic weight shifts, realistic cloth ripple physics.
-   - Mandatory Avoid Block: 'no sliding feet, no slipping shoes, no floating heels, no third leg, no extra arms, no foot morphing, no disappearing ankles, no jerky movement, no unnatural speech articulation'.
+   - Mandatory Avoid Block: 'no sliding feet, no slipping shoes, no floating heels, no third leg, no extra arms, no foot morphing, no disappearing ankles, no jerky movement, no unnatural speech articulation, no waxy skin'.
 4. 🚀 SCRIPT-LINKED INSTAGRAM & YOUTUBE SHORTS SEO SUITE:
    - Hook-Sync Instagram Caption (includes trending song tag and ManyChat trigger 'DANCE')
    - 3-Tier Targeted Hashtags (#MeeshoHaul #DanceReels #HookStep #OutfitInspo ...)
@@ -3153,7 +3197,7 @@ MANDATORY STRUCTURE:
         "generationConfig": {"temperature": 0.75, "topP": 0.95, "maxOutputTokens": 8192}
     }
     
-    candidate_models = ["gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-flash-latest", "gemini-3.7-flash"]
+    candidate_models = ["gemini-3.5-flash-lite", "gemini-3.6-flash", "gemini-flash-latest", "gemini-3.7-flash"]
     last_err = ""
     for model in candidate_models:
         api_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
@@ -3174,6 +3218,241 @@ MANDATORY STRUCTURE:
             continue
             
     return f"⚠️ **Gemini API Generation Error**: Unable to generate dance reel script ({last_err}). Please check your Gemini API key."
+
+
+def generate_lifestyle_vlog_package(
+    story_type: str = "Luxury Lifestyle",
+    story_idea: str = "",
+    content_mode: str = "Fictional / AI-Generated Mode",
+    duration: str = "30s",
+    visual_style: str = "Luxury Cinematic",
+    creator_bytes: bytes = None,
+    product_bytes: bytes = None,
+    outfit_type: str = "Western Chic & Luxury Accessories",
+    location_name: str = "Luxury Indian Mall Atrium & Aesthetic High-Street Café (Mumbai / Delhi)",
+    vehicle_name: str = "Matte Black Luxury Coupe / Sports Sedan",
+    language: str = "Hinglish",
+    voiceover_enabled: bool = True,
+    voice_style: str = "Luxury & Calm",
+    target_audience: str = "Fashion & Luxury Lifestyle",
+    target_platform: str = "Instagram Reels & YouTube Shorts",
+    meesho_title: str = "",
+    meesho_price: str = "",
+    meesho_code: str = "",
+    affiliate_link: str = "",
+    api_key: str = None,
+    **kwargs
+) -> str:
+    """
+    Generates a complete Fictional/Real-Life Lifestyle Vlog production package
+    following MASTER PROMPT SECTION 23 with full 9-Tab structured output.
+    """
+    if not api_key:
+        return "⚠️ **Gemini API Key Required**: Please enter your Gemini API Key in the sidebar or save it in `.env` to generate lifestyle vlogs."
+
+    master_sys_instruction = load_master_prompt()
+    contents_parts = []
+
+    if creator_bytes:
+        c_bytes, c_mime = optimize_image(creator_bytes)
+        if c_bytes:
+            contents_parts.append({
+                "text": "CREATOR REFERENCE IMAGE (Treat this image as CREATOR_REFERENCE for 100% identity lock: exact face, hair, body shape/silhouette proportions, height, and natural Indian skin undertone across all scene cuts. CRITICAL: DISCARD AND IGNORE THE BACKGROUND of this photo; do NOT copy or bleed the room, bedroom, or wall from this image into any scene!):"
+            })
+            contents_parts.append({
+                "inlineData": {"mimeType": c_mime, "data": base64.b64encode(c_bytes).decode("utf-8")}
+            })
+
+    if product_bytes:
+        p_bytes, p_mime = optimize_image(product_bytes)
+        if p_bytes:
+            contents_parts.append({
+                "text": "OUTFIT / ACCESSORY REFERENCE IMAGE (Showcase this exact fashion garment/accessory with 100% visual fidelity to cut, fabric, color, and silhouette):"
+            })
+            contents_parts.append({
+                "inlineData": {"mimeType": p_mime, "data": base64.b64encode(p_bytes).decode("utf-8")}
+            })
+
+    pacing_info = get_duration_pacing_tier(duration)
+    resolved_link = affiliate_link.strip() if affiliate_link and affiliate_link.strip() else f"https://www.meesho.com/search?q={quote_plus(meesho_title if meesho_title else 'luxury fashion aesthetic')}"
+
+    is_fictional = "Fictional" in content_mode
+    fictional_disclosure = '⚠️ **Disclosure**: "Fictional / AI-generated lifestyle story for creative entertainment."' if is_fictional else 'ℹ️ **Mode**: Real-Life Lifestyle Vlog (preserving real user events with cinematic storytelling).'
+
+    if voiceover_enabled:
+        vo_directive = f"""- 🎙️ VOICEOVER STATUS: ACTIVE & MANDATORY (VOICEOVER IS TURNED ON)
+  * Voice Style: {voice_style}
+  * Spoken Language: {language}
+  * MANDATORY TAB 2 INSTRUCTION: Every single scene (from Scene 1 to Scene N) MUST contain a dedicated spoken dialogue line:
+    * **Spoken Dialogue**: "Exact spoken line in {language}..."
+    Under NO circumstances output 'NONE' or 'Voice-over OFF'!
+  * MANDATORY TAB 5 INSTRUCTION: In Tab 5, provide the complete master continuous voice-over script:
+    ### 🎙️ MASTER CONTINUOUS VOICE-OVER SCRIPT (1-TAKE RECORDING)
+    > "Full uninterrupted voice-over paragraph combining all spoken dialogue lines from the entire reel (~25-45 words in {language})."
+    Followed by Word Count, Duration, and Pacing breakdown."""
+    else:
+        vo_directive = f"""- 🎙️ VOICEOVER STATUS: PURE VISUAL MODE (CLOSED LIPS & TRENDING BGM)
+  * Video Prompt Lip Delivery: STRICTLY SILENT. Closed lips, confident smile, mouth closed and motionless for zero AI video mouth glitches.
+  * TAB 2: * **Spoken Dialogue**: "None (Silent Visual Mode)"
+  * TAB 5 OPTIONAL SCRIPT: In Tab 5, still provide an optional continuous spoken script for creators who want to record audio:
+    > ℹ️ **MODE: PURE VISUAL STORYTELLING (Trending Song & Closed Lips)**
+    ### 🎙️ OPTIONAL 1-TAKE VOICE-OVER SCRIPT
+    > "Full spoken narration paragraph in {language} that can optionally be recorded or played with Neural TTS." """
+
+    shopping_twist = f"""- 🛍️ AFFILIATE / SHOPPING TIE-IN ACTIVE:
+  * Creator is living this aspirational luxury lifestyle (luxury car/hotel/cafe) while wearing: {meesho_title if meesho_title else 'Designer Outfit'} ({meesho_price if meesho_price else '₹499'} | Code: {meesho_code if meesho_code else 's-1892841'}).
+  * Deliver the viral 'Luxury Look on a Budget' curiosity twist!
+  * Call To Action: ManyChat trigger keyword 'STYLE' or 'VLOG' (Buy link: {resolved_link}).""" if (meesho_title or meesho_price or product_bytes) else "- 🛍️ PURE ASPIRATIONAL LIFESTYLE: Focus 100% on storytelling, cinematic atmosphere, and curiosity loops without direct product selling."
+
+    user_prompt = f"""
+Please generate the complete professional FICTIONAL LIFESTYLE VLOG PRODUCTION PACKAGE & GOOGLE FLOW PROMPTS according to MASTER PROMPT SECTION 23.
+
+USER SPECIFICATIONS:
+- Story Type: {story_type}
+- Content Mode: {content_mode}
+- User Story Idea / Premise: {story_idea if story_idea else f'An aspirational day living the {story_type} aesthetic in {location_name} featuring {vehicle_name}, encountering an unexpected luxury surprise.'}
+- Target Duration: {duration} ({pacing_info.get('tier_name', duration)})
+- Visual Style: {visual_style}
+- Creator Presentation & Outfit: {outfit_type}
+- Location / Setting: {location_name}
+- Main Vehicle / Prop: {vehicle_name}
+- Cultural & Location Mandate: STRICTLY UPSCALE INDIAN LUXURY SETTINGS (e.g. South Mumbai Seaface / Bandra artisan rooftop café, Khan Market Delhi, luxury Indian mall atrium). Do NOT use European/Western café references.
+- Language: {language}
+- Target Platform: {target_platform}
+- Target Audience: {target_audience}
+{vo_directive}
+{shopping_twist}
+
+- 🛡️ CRITICAL MANDATORY 14-POINT MASTER LOCK & DYNAMIC MULTI-LOCATION RULE:
+  * The user's uploaded CREATOR_REFERENCE photo contains a casual domestic/bedroom/home background.
+  * YOU MUST STRICTLY ISOLATE THE HUMAN CREATOR (face, hair, skin undertone, body proportions) AND DISCARD THE REFERENCE PHOTO'S ROOM!
+  * Do NOT place the creator in the reference photo's room in ANY scene!
+  * Lifestyle vlogs are a journey across multiple locations: Each scene MUST have its own rich, cinematic, distinct venue (e.g. Scene 1: Luxury car exterior & high-street driveway, Scene 2: High-end mall atrium with marble arches, Scene 3: Flagship designer boutique VIP fitting suite, Scene 4: Sunlit outdoor terrace café).
+  * 🛍️ MALL & BOUTIQUE TRY-ON MANDATE ("MALL MEIN CLOTHES PEHANKAR DIKHANA"): Whenever the lifestyle story features a shopping mall, boutique, luxury store, or showroom, the creator MUST ACTUALLY TRY ON AND WEAR THE CLOTHES on her body! Never just show her looking at racks or holding hangers. In Scene 3 (Boutique / Fitting Room), show the match-cut mirror reveal where she emerges/spins in front of the luxury arched mirror WEARING the gorgeous new designer outfit (e.g. silk slip gown, aesthetic co-ord, or chic dress), doing a 0.4x slow-mo twirl admiring the fit with glowing Duchenne smiling eyes!
+  * 8K Ultra-Photorealistic Visual Lock: Master shot on Arri Alexa Mini LF, 35mm prime f/1.8 lens, shallow depth of field with organic bokeh. 8K UHD resolution, authentic skin micro-pores and subtle peach fuzz, natural light reflections, zero AI plastic smoothing.
+  * Duchenne Smile & Facial Micro-Expressions: Authentic Duchenne smile with smiling eyes crinkling (orbicularis oculi muscle engagement) at corners. Natural mouth and jaw articulation synchronized with spoken syllables when talking. Subtle candid head tilt, eliminating any frozen or fake plastic mouth expressions.
+  * Camera Motion & Speed Ramping: Direct explicit speed ramp curves (e.g. 00:00-00:01s: 1.0x Normal entry ➔ 00:01-00:02.5s: 0.4x Slow-mo 120fps glide ➔ 00:02.5-00:04s: 1.5x Snap cut).
+  * Synchronized SFX Timeline & Audio Ducking: Second-by-second Foley Sound cues (tactile thud, heel clicks, fabric swish) with mandatory -8dB background music ducking during spoken voice-over.
+  * In TAB 4 (Google Flow prompts), EVERY scene prompt MUST include:
+    * **8K UHD Cinematography Standard**: Arri Alexa Mini LF, 35mm prime f/1.8, 8K resolution, skin pores, fabric drape.
+    * **Duchenne Smile & Micro-Expressions**: Authentic smiling eyes crinkling, natural mouth articulation, zero plastic grin.
+    * **Camera Motion & Speed Ramping**: Precise speed curve timeline.
+    * **Synchronized SFX Timeline**: Exact Foley cues with -8dB ducking.
+    * **Background Isolation Lock**: STRICTLY DISCARD and IGNORE the original background/room from CREATOR_REFERENCE. Extract ONLY the creator's face, hair, and body proportions. Place creator exclusively inside [This Scene's Venue].
+    * **Avoid / Negative Prompt**: original photo background, background bleed from CREATOR_REFERENCE, bedroom backdrop, domestic home interior, repeating static room, blurry, distorted face, waxy skin, plastic smoothing, frozen mouth smile, sliding feet, floating heels, extra limbs.
+
+MANDATORY 9-TAB OUTPUT STRUCTURE:
+Every section below must be formatted with exact markdown headers so it cleanly populates the app tabs:
+
+## 📖 TAB 1 — STORY & CURIOSITY BLUEPRINT
+- **Story Title**: (Curiosity-driven, punchy)
+- **Logline & Story Summary**: (2-3 sentences capturing the core progression)
+- **Fictional Disclosure**: {fictional_disclosure}
+- **5 Viral Hook Battle & Evaluation**:
+  1. Curiosity Hook (Score 0-100 & Why)
+  2. Surprise Hook (Score 0-100 & Why)
+  3. Luxury Reveal Hook (Score 0-100 & Why)
+  4. Emotional Hook (Score 0-100 & Why)
+  5. Mystery Hook (Score 0-100 & Why)
+  * **Selected Winning Hook**: (Explain why it wins the 1-2s scroll-stop battle)
+- **Story Architecture**:
+  * Story Goal
+  * Curiosity Question
+  * Open Loop (Intentionally delayed information)
+  * Escalation & Progression
+  * Surprise Reveal
+  * Payoff & Climax
+  * Loop Ending (Connecting back to the opening frame)
+
+## 🎬 TAB 2 — FINAL SCRIPT
+Scene-by-scene script timed accurately for {duration} (divide into 4 to 6 choreographed scenes matching the timeline):
+For each scene provide:
+- **Scene Number & Timestamp**: [00:00 - 00:XX]
+- **Story Purpose & Curiosity Function**:
+- **Visual Action**:
+- **Cinematography & Speed Ramping**:
+- **Creator Pose & Duchenne Micro-Expression**:
+- **Lip Delivery**: {'Natural conversational articulation matching voice-over' if voiceover_enabled else 'STRICTLY SILENT. Closed lips, confident model smile. Mouth closed and motionless.'}
+- 🟡 **ON-SCREEN TEXT**: "BOLD PUNCHY OVERLAY WITH EMOJIS"
+- **Spoken Dialogue**: {'"Exact spoken line in ' + language + '"' if voiceover_enabled else '"None (Silent Visual Mode)"'}
+- **Ambient SFX & Foley Cues**:
+- **Transition & Continuity Notes**:
+
+## 📐 TAB 3 — VISUAL SHOT LIST & CAMERA SPEED RAMPING MATRIX
+- Shot-by-shot cinematographer table: Scene #, Framing (ECU, Close-up, Mid, Full-body), Lens & Angle, Camera Movement & Speed Ramping (1.0x ➔ 0.4x slow-mo 120fps ➔ 1.5x snap cut), Lighting Palette, Key Props & Vehicle Interaction.
+
+## 🤖 TAB 4 — GOOGLE FLOW & KLING AI PROMPTS (8K & 14-POINT MASTER LOCK)
+For every scene generate a dedicated copy-ready visual prompt inside a ```text code block formatted with:
+- 8K UHD Cinematography Standard (Arri Alexa Mini LF, 35mm prime f/1.8, 8K resolution, skin pores, fabric drape)
+- Facial Micro-Expressions & Duchenne Smile (smiling eyes crinkling, natural mouth articulation, zero plastic grin)
+- Camera Motion & Speed Ramping (1.0x ➔ 0.4x slow-mo 120fps ➔ 1.5x snap cut)
+- Synchronized Foley SFX Timeline (-8dB audio ducking during speech)
+- Explicitly lock `CREATOR_REFERENCE` for facial identity, Indian skin tone, and body proportions.
+- Explicitly lock `PRODUCT_REFERENCE` for outfit, colors, fabrics, and accessories.
+- Explicitly lock `Background Isolation`: Discard original photo background/bedroom from `CREATOR_REFERENCE`. Place creator exclusively inside the designated scene location.
+- Vertical 9:16 framing, 8k photorealistic, cinematographic lighting, stationary ground contact.
+- Lip Delivery lock: {'Natural mouth articulation for dialogue' if voiceover_enabled else 'STRICTLY SILENT. Closed lips, confident smile, mouth is closed and not moving at all.'}
+- Safety avoid block: {'no sliding feet, no floating heels, no third leg, no extra arms, no background warping, original photo background, bedroom backdrop, domestic home interior, background bleed from CREATOR_REFERENCE, repeating static room, waxy skin, plastic smoothing, frozen mouth smile' if voiceover_enabled else 'no speaking, no moving lips, no open mouth, no sliding feet, no floating heels, no third leg, no extra arms, no background warping, original photo background, bedroom backdrop, domestic home interior, background bleed from CREATOR_REFERENCE, repeating static room, waxy skin, plastic smoothing'}.
+
+## 🎙️ TAB 5 — VOICE-OVER STUDIO
+{'### 🎙️ MASTER CONTINUOUS VOICE-OVER SCRIPT (1-TAKE RECORDING)\n> "Provide the unbroken continuous voice-over paragraph combining all spoken dialogue lines from the entire reel into one fluent take in ' + language + '."\n\n### 📊 Audio Pacing & Cadence Breakdown\n- Target Duration: ' + duration + '\n- Total Word Count: (count words)\n- Pacing: (~2.4 words/second)' if voiceover_enabled else '> ℹ️ **MODE: PURE VISUAL STORYTELLING (Closed Lips & Trending BGM)**\n### 🎙️ OPTIONAL 1-TAKE VOICE-OVER SCRIPT\n> "Provide an optional unbroken continuous voice-over paragraph in ' + language + ' for creators wanting to record narration."\n\n### 📊 Audio Pacing & Cadence Breakdown\n- Target Duration: ' + duration}
+
+## 🟡 TAB 6 — ON-SCREEN TEXT OVERLAYS
+List all on-screen subtitle lines organized by timestamp.
+
+## 🎧 TAB 7 — SOUND DESIGN & FOLEY TIMELINE
+- Musical Genre & Recommended BPM
+- Audio Ducking Rule: -8dB background music ducking during spoken lines
+- Second-by-Second Foley SFX Timeline (engine rumble, car door thud, high heels on marble, espresso steam, fabric swish, chime).
+
+## 🚀 TAB 8 — INSTAGRAM SEO SUITE
+- High-CTR Reel Title
+- Algorithmic Instagram Caption (includes relatable storytelling, emojis, and ManyChat trigger keyword)
+- 3-Tier Targeted Hashtags (Niche, Category, Viral)
+- Accessibility Alt-Text
+- YouTube Shorts 3 High-CTR Titles & Chapters
+- Readymade ManyChat Auto-DM Template
+
+## 📊 TAB 9 — RETENTION SCORECARD & REWATCH POTENTIAL
+- Score table (0-100) across:
+  * Hook Power
+  * Curiosity Maintenance
+  * Story Progression
+  * Visual Variety & Pacing
+  * Emotional Engagement
+  * Surprise & Payoff
+  * Rewatch / Loop Potential
+  * Overall Score (95+/100)
+"""
+    contents_parts.append({"text": user_prompt})
+
+    payload = {
+        "system_instruction": {"parts": [{"text": master_sys_instruction}]},
+        "contents": [{"parts": contents_parts}],
+        "generationConfig": {"temperature": 0.75, "topP": 0.95, "maxOutputTokens": 8192}
+    }
+
+    candidate_models = ["gemini-3.5-flash-lite", "gemini-3.6-flash", "gemini-flash-latest", "gemini-3.7-flash"]
+    last_err = ""
+    for model in candidate_models:
+        api_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+        try:
+            res = requests.post(api_url, json=payload, timeout=50)
+            if res.status_code == 200:
+                data = res.json()
+                cands = data.get("candidates", [])
+                if cands:
+                    text = cands[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+                    if text:
+                        return text
+            else:
+                err_data = res.json() if res.content else {}
+                last_err = err_data.get("error", {}).get("message", f"HTTP {res.status_code}")
+        except Exception as ex:
+            last_err = str(ex)
+            continue
+
+    return f"⚠️ **Gemini API Generation Error**: Unable to generate lifestyle vlog ({last_err}). Please check your Gemini API key."
 
 
 def call_gemini_api(api_key, creator_bytes=None, product_images=None, duration="30s", language="Hinglish", presentation_mode="Magic Transition", voice_tone="Relatable Bestie", category_hint="Auto-detect", price="₹499", meesho_code="s-18392841", notes="", remix_context=None, product_back_bytes=None, background_bytes=None, background_preset_desc="", brand_dupe_info=None, include_on_screen_text=False, affiliate_link="", **kwargs):
@@ -3321,11 +3600,35 @@ VOICE-OVER TONE: 👠 FASHION STYLIST & EXPERT VIBE
   * Strictly OMIT on-screen text lines. Focus entirely on visual camera actions and spoken voice-over lines.
 """
 
-    # 3. User instructions
     pacing_info = get_duration_pacing_tier(duration)
+
+    presentation_override = ""
+    if "Unbox" in presentation_mode:
+        presentation_override = """
+🚨 PRESENTATION FORMAT: 📦 Unbox & Hold ➔ Throw/Snap Try-On:
+- Scene 1 [00:00 - 00:04]: Creator in casual daily clothes holding and unfolding the product in hands.
+- Scene 2 [00:04 - 00:07]: Creator tosses the cloth toward camera lens or snaps fingers.
+- Scene 3+: Creator wears outfit.
+"""
+    else:
+        presentation_override = """
+🚨 MANDATORY PRESENTATION FORMAT: 👗 DIRECT TRY-ON (UNIVERSAL DEFAULT RULE):
+- Creator is ALREADY wearing the COMPLETE, fully-styled reviewed outfit from the very first second (00:00 sharp)!
+- 🚫 ABSOLUTE BAN: NEVER wear casual everyday clothes, pajamas, or hold folded cloth in Scene 1!
+- SCENE 1 [00:00 - 00:02] (2-SECOND SILENT VISUAL OUTFIT HOOK):
+  * WARDROBE: Creator is wearing the COMPLETE, fully-styled outfit from head to toe from 00:00 sharp.
+  * ACTION: Confident poise, graceful micro-twirl showing full flare and fabric drape.
+  * LIP DELIVERY: Silent visual hook. Creator has a warm, confident smile with closed lips. Creator is NOT speaking or talking in this scene. Spoken words = 0.
+  * AUDIO: Cinematic sub-bass beat drop / whoosh cue. Zero spoken voice.
+  * AVOID: speaking, talking, moving lips, open mouth, talking head, casual clothes, pajamas, cardboard box.
+- SCENE 2 [00:02 - 00:06] (ON-CAMERA SPOKEN HOOK):
+  * Camera punches in to eye-level mid-shot. Creator looks directly into camera lens wearing the outfit, speaking the hook aloud on-camera with synchronized lip movement.
+"""
 
     user_prompt = f"""
 Please generate the complete professional short-form video script according to the MASTER PROMPT instructions.
+
+{presentation_override}
 
 USER CONFIGURATION & METADATA:
 - Target Duration: {duration} (Strictly between Minimum 10 Seconds and Maximum 60 Seconds / 01:00)
@@ -3337,21 +3640,41 @@ USER CONFIGURATION & METADATA:
 {dupe_section}
 {ost_section}
 
+- 🎨 PRECISE FASHION COLOR TERMINOLOGY MANDATE:
+  * Accurately identify and describe specific shades from product photo!
+  * If the garment is deep magenta, hot pink, or fuchsia, STRICTLY describe it as 'Rani Pink' (रानी पिंक) or 'Magenta' across script, voice-over, caption, and DM code (e.g. comment 'RANI' or 'MAGENTA').
+  * NEVER flatten deep vibrant shades to generic 'Pink', 'Blue', or 'Red'. Use authentic Indian fashion shade names.
+
 - 🗣️ VOICE QUALITY, DICTION & UNBROKEN SENTENCES MANDATE (CRITICAL):
   * Diction & Clarity: Use natural, sweet, simple, everyday spoken Hindi/Hinglish (like talking to a close friend or saheli). Strictly PROHIBIT difficult, archaic, or tongue-twister Hindi words (e.g. adhbhoot, shobhaymaan, aakarshak, vastra, paridhaan). Every word must be effortlessly speakable and crystal-clear to any listener.
   * ZERO Broken Sentences (100% Complete Sentences): Every single scene cut MUST have complete, grammatically finished sentences ending with full punctuation (. or ! or ?). NEVER break, cut, or split a sentence mid-way across scene timestamps. The thought must start and finish completely inside that scene.
   * Strict Words-Per-Second (WPS) Ceiling: Calibrate speech pace strictly at 2.2 to 2.4 words per second. Formula: Scene Seconds × 2.3 = Maximum Words. Every scene must explicitly display: '⏱️ Pacing: [X Words | ~Ys | 100% Speakable ✅]'.
   * MASTER VOICE-OVER TRACK: At the VERY TOP of the script output, you MUST provide '🎙️ MASTER VOICE-OVER (Uncut Single-Take Audio Track)' as one continuous, smooth, unbroken paragraph for seamless 1-take audio recording.
-   * 🚀 SCRIPT-LINKED INSTAGRAM & YOUTUBE SHORTS SEO SUITE: Provide 100% script-linked SEO metadata (Hook-sync caption, 3-tier hashtags, Instagram Alt-Text, 3 viral YouTube Shorts titles, scene timestamps chapters, 500-char tags, thumbnail hook, and WhatsApp affiliate deal card).
+- 🔥 10/10 RETENTION MANDATE: CONTINUOUS "AAGE KYA HONE WALA HAI?" MICRO-CLIFFHANGERS (MANDATORY ACROSS EVERY SCENE):
+  * Strictly PROHIBIT flat, passive, boring reviews (e.g. NEVER just say "Look at this color, it has good stitching and comfortable fabric")!
+  * EVERY SINGLE SCENE must carry a psychological Micro-Cliffhanger and Curiosity Gap that makes the viewer constantly wonder "Aage kya hone wala hai?":
+    - Scene 1 (00:00 - 00:02): Visual Intrigue & Paradox Hook (e.g. On-screen text: "मुझे लगा था Meesho से बड़ा धोखा हो गया... 😳" or "₹15,000 designer look under ₹800? 😱"). Subconscious Question: "क्या धोखा हुआ? कपड़ा खराब आया या कोई बड़ा चमत्कार हुआ? आगे क्या हुआ?"
+    - Scene 2 (00:02 - 00:06): Tension Escalation & On-Camera Confession (e.g. "जब पार्सल खोला तो मुझे लगा ₹15,000 वाला डिज़ाइन ₹700 में कभी नहीं आ सकता, लेकिन..."). Subconscious Question: "लेकिन क्या हुआ? आगे दिखाओ!"
+    - Scene 3 (00:06 - 00:14): Skepticism Barrier & Live Material Test (e.g. "मिरर-वर्क तो असली निकला, पर सबसे बड़ा डर था कि फैब्रिक कहीं see-through तो नहीं? धूप में चेक किया तो देखो!"). Subconscious Question: "धूप में क्या निकला? क्या सच में पारदर्शी है?"
+    - Scene 4 (00:14 - 00:22): Delayed Movement Payoff & Snatched Silhouette (e.g. "और फिटिंग? Wait for this 360 twirl... पीछे का केप फॉल देखकर मैं खुद चौंक गई!"). Subconscious Question: "पीछे कैसा दिखता है? पूरा ट्विरल देखने तक रुकना पड़ेगा।"
+    - Scene 5 (00:22 - 00:30): Price Shock & Conversion Action (e.g. "प्राइस सुनकर भरोसा नहीं होगा... ये ₹800 से भी कम का है! डायरेक्ट लिंक चाहिए तो 'RANI' कमेंट करो।").
+  * In EVERY scene of the output script, explicitly include:
+    * **Subconscious Curiosity Trigger ("Aage Kya Hone Wala Hai?")**: [Exact viewer thought]
+    * **Micro-Cliffhanger**: [Open loop pulling viewer into the next frame]
+
 {pacing_info['prompt_instructions']}
 - Creator Wardrobe & Presentation Format: {presentation_mode}
   * CRITICAL RULES:
-    - If '🪄 Magic Transition' or '👗 Direct Try-On': Creator is ALREADY wearing the COMPLETE reviewed product/outfit from 00:00! Scene 1 [00:00 - 00:02] is STRICTLY a silent visual hook (0 spoken words, beat drop only, lips closed with confident smile). At 00:02, Scene 2 begins where creator speaks the hook aloud on-camera. 🚫 NEVER wear everyday casuals or hold folded garments in Scene 1! Both VISUAL ACTION and GOOGLE FLOW PROMPT MUST 100% MATCH, showing the creator wearing the complete outfit from 00:00 onwards.
+    - If '📦 Unbox & Hold ➔ Throw/Snap Try-On' (or 'Unbox & Hold' or 'Throw/Snap'):
+      * SCENE 1 [Hook & In-Hand Reveal]: Creator wears everyday casual/neutral clothing (plain tee / loungewear from CREATOR_REFERENCE). 🚫 STRICTLY PROHIBITED: Creator is NOT wearing the reviewed outfit yet! Creator enthusiastically holds and unfolds the Meesho garment with both hands directly toward the camera lens, inspecting the color vibrancy, fabric texture, and pattern while speaking the opening curiosity hook aloud: 'Maine Meesho se yeh outfit mangaya hai, dekho kaisa aaya hai!' Tension level: 'Hook & Curiosity Peak 🔥' (Viewer is kept hooked wondering: 'Hath me to kapda accha lag raha hai, par pehenne ke baad kaisa lagega? Fit aayega ya fail hoga?').
+      * SCENE 2 [Viral Kinetic Transition]: Creator playfully throws/tosses the unfolded garment directly toward the camera lens (or does an energetic finger snap / fast spin)! 1.5x Speed ramp into cloth fluttering whoosh covering lens ➔ 0.4x slow-mo 120fps match cut ➔ heavy sub-bass 808 drop. Anticipation peak ('Aage kya hone wala hai?').
+      * SCENE 3 ONWARDS [Worn Try-On & 8K Payoff]: Match-cut reveal! Creator is now fully wearing the styled Meesho outfit! 8K UHD Master, Arri Alexa Mini LF, 35mm prime f/1.8, authentic skin micro-pores, natural fabric gravity drape & fluid wave ripples, zero waxy plastic AI smoothing. Authentic Duchenne smile with orbicularis oculi eye-corner crinkles, lively lip-synced conversational speech articulation, zero frozen mouth. 0.4x ultra slow-mo 120fps 360° twirl displaying complete silhouette flare, followed by 85mm macro detail tilt-up on stitching, embroidery, and neckline. Honest sizing verdict, budget Meesho price reveal, and ManyChat DM comment CTA.
+    - If '👗 Direct Try-On': Creator is ALREADY wearing the COMPLETE reviewed product/outfit from 00:00! Scene 1 [00:00 - 00:02] is STRICTLY a silent visual hook (0 spoken words, beat drop only, lips closed with confident smile). At 00:02, Scene 2 begins where creator speaks the hook aloud on-camera. Both VISUAL ACTION and GOOGLE FLOW PROMPT MUST 100% MATCH, showing the creator wearing the complete outfit from 00:00 onwards.
+    - If '🪄 Magic Transition': Fast visual transition. If unboxing is implied, Scene 1 shows creator holding garment in casuals, transitioning into worn try-on by Scene 2.
     - If '💡 Problem ➔ Solution Hack': 3-second relatable wardrobe struggle hook (e.g. bra strap showing, petticoat bulge, VPL lines, button gap) ➔ creator demonstrates Meesho secret hack product live on camera ➔ shows the flawless clean payoff!
     - If '📦 Zivame/Clovia Review': For 2-piece / intimate sets: Creator wears the top/bralette with high-waist neutral palazzo/trousers while holding the matching delicate bottom/panty piece in hand to showcase waist stretch and seamless fabric up close. (0% policy risk).
     - If '🏖️ Parachute/Palazzo + Bralette Peek-a-Boo': VERIFIED 0% BAN WINNING BLUEPRINT: Creator wears double-layered halter bralette crop top paired with low-waist relaxed flowy parachute/palazzo trousers, with decorative contrast side-tie strings visible at hips above the waistband. Camera MUST be 'Full-length vertical 9:16 tracking shot, smooth circular pan' with smooth turn showing back straps and waist strings, Avoid: 'No nudity, no underwear exposure, no suggestive angles, no warped limbs, no unnatural body physics.'
     - AUTOMATIC TRIGGER FOR INTIMATES / BIKINI / BRALETTE: Whenever product is an intimate 2-piece set, bra & panty, or bikini, and presentation mode is any worn / try-on format, AUTOMATICALLY APPLY THIS EXACT SCENE 3 WINNING BLUEPRINT for the fit reveal scene!
-    - If '👗 Direct Try-On': Creator is already wearing the reviewed product from 00:00.
     - If '🛍️ Hold & Review Only': Creator remains in casuals throughout and holds garment on hanger/tabletop.
 - Product Category Hint: {category_hint}
 - Product Price: {price if price else 'Affordable / Budget-friendly'}
@@ -3359,11 +3682,15 @@ USER CONFIGURATION & METADATA:
 - Creator Affiliate / Buy Link: {affiliate_link if affiliate_link else 'https://www.meesho.com/search?q=' + quote_plus(category_hint)} (MUST embed this exact link in ManyChat template & deal card)
 - Additional Creator/Seller Notes: {notes if notes else 'None provided'}
 
-CONSISTENCY LOCK RULES (MANDATORY IN EVERY SCENE PROMPT):
+CONSISTENCY & 14-POINT MASTER LOCK RULES (MANDATORY IN EVERY SCENE PROMPT):
 - 'Identity & Anatomy Lock: REFERENCE IMAGE 1 (CREATOR) - Lock exact facial identity, hair styling, body shape, silhouette, height, and natural body proportions across all cuts without morphing or warping.'
-- 'Garment Lock: REFERENCE IMAGE 2 (PRODUCT FRONT) [and REFERENCE IMAGE 3 (PRODUCT BACK) if provided] - Lock exact garment cut, fabric, color, prints, and stitching.'
+- 'Garment Lock: REFERENCE IMAGE 2 (PRODUCT FRONT) [and REFERENCE IMAGE 3 (PRODUCT BACK) if provided] - Lock exact garment cut, fabric, color, prints, and authentic fabric drape/gravity physics.'
 - 'Environment Lock: {background_preset_desc if background_preset_desc else 'Minimalist aesthetic studio room'} - Lock room architecture and background elements across all cuts.'
-- In every scene prompt, the 'Avoid:' block MUST include: 'no face swapping, no morphing facial identity, no changing body shape, no warping body proportions, no shifting waist or bust size, no inconsistent height, no fluctuating skin tone, no altering dress colors, no changing fabric patterns, no inconsistent neckline, no background shifts'.
+- '8K Ultra-Photorealistic Visual Lock: Master shot on Arri Alexa Mini LF, 35mm prime f/1.8 lens, shallow depth of field with organic bokeh. 8K UHD resolution, true-to-life skin micro-texture with visible pores and subtle peach fuzz, natural light reflection, zero plastic smoothing, zero AI waxy sheen.'
+- 'Duchenne Smile & Facial Micro-Expressions: Authentic Duchenne smile with genuine eye crinkling (orbicularis oculi muscle engagement) at corners. Dynamic mouth and jaw articulation naturally synchronized with spoken syllables when talking. Subtle candid head tilt, expressive eyebrow lifts for curiosity, eliminating any frozen or fake plastic mouth expressions.'
+- 'Camera Motion & Speed Ramping: Choreographed Speed Ramping (00:00-00:01s: 1.0x Normal entry ➔ 00:01-00:02.5s: 0.4x Slow-mo 120fps glide ➔ 00:02.5-00:04s: 1.5x Snap cut). Lens: 24mm-35mm dynamic tracking push-in with fluid Steadicam stabilization.'
+- 'Synchronized SFX Timeline: Second-by-second Foley Sound cues (tactile thud, heel clicks, fabric swish) with -8dB background music ducking during spoken voice-over.'
+- In every scene prompt, the 'Avoid:' block MUST include: 'no face swapping, no morphing facial identity, no changing body shape, no warping body proportions, no shifting waist or bust size, no inconsistent height, no fluctuating skin tone, no waxy/plastic skin, no frozen mouth smile, no unnatural teeth, no altering dress colors, no changing fabric patterns, no inconsistent neckline, no background shifts'.
 
 REQUIREMENTS:
 1. Automatic image role detection & product truth analysis.
@@ -3373,7 +3700,7 @@ REQUIREMENTS:
      * NEVER use awkward false euphemisms like "dress" or "mini tunic" to disguise undergarments in speech or prompt.
      * E-Commerce Styling Standard: Use Zivame/Clovia formula (top/bra worn with high-waist palazzo/trousers + matching panty held in hands demonstrating waist elastic stretch) or Parachute pants + bralette hack with panty side-strings visible at waistband.
      * What to avoid: ONLY sexually explicit/pornographic content (nudity, exposed breasts, erotic, cleavage zoom) is prohibited. Commercial fashion terms ("bra", "panty", "undergarments") are 100% permitted.
-   - FORMAT ALL GOOGLE FLOW PROMPTS with the 8C structure: 'Voice-over:', 'Visual:', 'Environment Lock:', 'Style:', 'Camera:', 'Audio:', 'Transition:', and mandatory 'Avoid:' negative safety block ('No nudity, no underwear exposure without outer layer, no suggestive angles, no sexualized presentation, no warped limbs, no unnatural body physics, no background shifts, no changing room decor, no inconsistent wall colors...').
+   - FORMAT ALL GOOGLE FLOW PROMPTS with the 14-POINT MASTER LOCK structure: 'Voice-over:', 'Visual:', 'Identity & Anatomy Lock:', 'Garment Lock:', 'Environment Lock:', '8K Ultra-Photorealistic Visual Lock:', 'Duchenne Smile & Facial Micro-Expressions:', 'Camera Motion & Speed Ramping:', 'Synchronized SFX Timeline:', 'Transition:', and mandatory 'Avoid:' negative safety block.
 3. Strict Deliverables in Output:
    - Product & Strategy Analysis
    - Selected Hook (Score target 99/100)
@@ -3411,7 +3738,7 @@ REQUIREMENTS:
         }
     }
     
-    candidate_models = ["gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-flash-latest", "gemini-3.7-flash"]
+    candidate_models = ["gemini-3.5-flash-lite", "gemini-3.6-flash", "gemini-flash-latest", "gemini-3.7-flash"]
     last_err = ""
     
     for model_name in candidate_models:
@@ -3516,6 +3843,7 @@ with st.sidebar:
         "💡 Problem ➔ Solution Hack (Wardrobe struggle ➔ Secret product fix)",
         "🏖️ Parachute/Palazzo + Bralette Peek-a-Boo (Verified 0% Ban Direct Try-On)",
         "📦 Zivame/Clovia Review (Top worn + Panty in hand - 0% Policy Risk)",
+        "📦 Unbox & Hold ➔ Throw/Snap Try-On (हाथ में कपड़ा खोलकर ➔ स्क्रीन पर फेंकना/चुटकी ➔ पहनकर लुक)",
         "🛍️ Hold & Review Only (Never worn, hanger/tabletop display)"
     ]
     default_mode_idx = 0
@@ -3546,6 +3874,23 @@ with st.sidebar:
                 break
     category_hint = st.selectbox("🏷️ Product Category", categories, index=default_cat_idx)
     
+    st.markdown("---")
+    st.markdown("### 👁️ Universal Visual Attention Engine")
+    vmode_choice = st.radio(
+        "🎛️ Global Camera & Motion Mode",
+        [
+            "🔒 Cinematic Precision Director Lock (Maximum Viral Retention)",
+            "🌿 Fluid & Flexible Creator Flow (Natural Organic Mode)"
+        ],
+        index=0 if st.session_state.get("global_visual_mode", "precision") == "precision" else 1,
+        key="sidebar_global_visual_mode_radio",
+        help="Precision Lock locks exact camera angles, 0.5x slow-mo speed curves, and facial expressions. Fluid Flow allows relaxed organic AI camera freedom."
+    )
+    if "Precision" in vmode_choice:
+        st.session_state["global_visual_mode"] = "precision"
+    else:
+        st.session_state["global_visual_mode"] = "fluid"
+
     st.markdown("---")
     st.markdown("### 🏷️ Commerce Details")
     default_price = st.session_state["selected_trend"].get("price_range", "₹399") if "selected_trend" in st.session_state else ""
@@ -3603,12 +3948,874 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
+def parse_lifestyle_tabs(vlog_text: str) -> dict:
+    """Robust 9-tab parser supporting any header punctuations, emojis, and hyphens."""
+    tab_patterns = [
+        ("tab1", re.compile(r'^#+\s*(?:[^\n]*\bTAB\s*1\b|.*?STORY\s*&\s*CURIOSITY)', re.I)),
+        ("tab2", re.compile(r'^#+\s*(?:[^\n]*\bTAB\s*2\b|.*?FINAL\s*SCRIPT|.*?SCENE[\s-]*BY[\s-]*SCENE)', re.I)),
+        ("tab3", re.compile(r'^#+\s*(?:[^\n]*\bTAB\s*3\b|.*?VISUAL\s*SHOT|.*?SHOT\s*LIST)', re.I)),
+        ("tab4", re.compile(r'^#+\s*(?:[^\n]*\bTAB\s*4\b|.*?GOOGLE\s*FLOW|.*?KLING)', re.I)),
+        ("tab5", re.compile(r'^#+\s*(?:[^\n]*\bTAB\s*5\b|.*?VOICE[\s-]*OVER)', re.I)),
+        ("tab6", re.compile(r'^#+\s*(?:[^\n]*\bTAB\s*6\b|.*?ON[\s-]*SCREEN\s*TEXT)', re.I)),
+        ("tab7", re.compile(r'^#+\s*(?:[^\n]*\bTAB\s*7\b|.*?SOUND\s*DESIGN)', re.I)),
+        ("tab8", re.compile(r'^#+\s*(?:[^\n]*\bTAB\s*8\b|.*?INSTAGRAM\s*SEO)', re.I)),
+        ("tab9", re.compile(r'^#+\s*(?:[^\n]*\bTAB\s*9\b|.*?RETENTION|.*?SCORECARD)', re.I)),
+    ]
+
+    sections = {f"tab{i}": [] for i in range(1, 10)}
+    sections["overview"] = []
+    curr_key = "overview"
+
+    for line in vlog_text.splitlines():
+        matched = False
+        for key, pat in tab_patterns:
+            if pat.search(line.strip()):
+                curr_key = key
+                matched = True
+                break
+        if not matched:
+            sections[curr_key].append(line)
+
+    return {k: "\n".join(v).strip() for k, v in sections.items()}
+
+def generate_lifestyle_voiceover_narration(story_text: str, language: str = "Hinglish", voice_style: str = "Luxury & Calm", api_key: str = None) -> str:
+    """Generates a dedicated high-retention Master Voice-over script and spoken dialogue lines."""
+    if not api_key:
+        return ""
+    prompt = f"""You are an expert Instagram Reels Voice-over Writer.
+Write an engaging, high-retention conversational voice-over script in {language} for the following lifestyle vlog reel:
+
+{story_text[:2000]}
+
+MANDATORY OUTPUT FORMAT:
+### 🎙️ MASTER CONTINUOUS VOICE-OVER SCRIPT (1-TAKE RECORDING)
+> "Write the complete unbroken continuous voice-over paragraph in natural, relatable {language} ({voice_style} tone, ~35-45 words). Do not include timestamps or scene numbers inside the speech."
+
+### 📊 Audio Pacing & Cadence Breakdown
+- Target Duration: ~15-25 seconds (matches reel tempo)
+- Word Count: ~35-45 words (~2.4 words/second)
+- Voice Tone: {voice_style}
+"""
+    payload = {
+        "contents": [{"parts": [{"text": prompt}]}],
+        "generationConfig": {"temperature": 0.75, "maxOutputTokens": 1200}
+    }
+    candidate_models = ["gemini-3.5-flash-lite", "gemini-3.6-flash", "gemini-flash-latest", "gemini-3.7-flash"]
+    for model in candidate_models:
+        api_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+        try:
+            res = requests.post(api_url, json=payload, timeout=25)
+            if res.status_code == 200:
+                data = res.json()
+                cands = data.get("candidates", [])
+                if cands and "content" in cands[0] and "parts" in cands[0]["content"]:
+                    return cands[0]["content"]["parts"][0]["text"].strip()
+        except Exception:
+            continue
+    return ""
+
+# Complete Default Fictional Lifestyle Vlog Package with full Voice-Over & Google Flow Video Prompts
+DEFAULT_LIFESTYLE_VLOG_PACKAGE = """# 🎬 COMPLETE FICTIONAL LIFESTYLE VLOG PRODUCTION PACKAGE & GOOGLE FLOW PROMPTS
+
+## 📖 TAB 1 — STORY & CURIOSITY BLUEPRINT
+* **Story Title**: The ₹499 Boutique Mistake That Saved My Night ✨
+* **Logline & Story Summary**: Arriving at an upscale shopping mall in a matte black sports coupe to pick up a reserved ₹50,000 designer outfit, a creator discovers the boutique accidentally gave her order away. Handed an apology note and an affordable ₹499 mirror-work sharara set instead, she redirects her night to an aesthetic high-street terrace café and turns the boutique mishap into a viral fashion flex.
+* **Fictional Disclosure**: ⚠️ **Disclosure**: "Fictional / AI-generated lifestyle story for creative entertainment."
+* **5 Viral Hook Battle & Evaluation**:
+  1. **Curiosity Hook**: "They gave my reserved boutique outfit away..." (Score: 88/100) — High intrigue.
+  2. **Surprise Hook**: "When a boutique mistake turns into a luxury flex..." (Score: 92/100) — Strong lifestyle appeal.
+  3. **Luxury Reveal Hook**: "Stepping out of a sports car to pick up a ₹50,000 look..." (Score: 96/100) — Winning scroll-stopper with high contrast.
+  4. **Emotional Hook**: "I almost cancelled my entire night..." (Score: 84/100) — Relatable bestie tone.
+  5. **Mystery Hook**: "The envelope that changed my evening..." (Score: 89/100) — Curiosity open loop.
+  * **Selected Winning Hook**: Hook #3 (Score 96/100) — Instant 0.5s visual status anchor with immediate contrast.
+* **Story Architecture**:
+  * Story Goal: Heading to luxury mall to dress up for a high-profile night out.
+  * Curiosity Question: What happens when the ₹50,000 reserved look disappears?
+  * Open Loop: Creator handed an apology envelope with an unexpected ₹499 alternative.
+  * Escalation & Progression: Mall atrium stride ➔ Boutique counter reveal ➔ Terrace café walk.
+  * Surprise Reveal: The mirror-work sharara outfit isn't ₹50,000—it's a ₹499 Meesho find!
+  * Payoff & Climax: Viral fit flex + automated ManyChat DM delivery.
+  * Loop Ending: Closing café wink reconnects to the opening sports car door exit frame.
+
+---
+
+## 🎬 TAB 2 — FINAL SCRIPT (WITH SPOKEN VOICE-OVER & SPEED RAMPING)
+
+### 🎬 SCENE 1 [00:00 - 00:03] — 🏎️ SPORTS CAR ARRIVAL & ENTRY
+* **Story Purpose**: High-status visual hook + curiosity loop open.
+* **Visual Action**: Matte black sports coupe pulls up outside the luxury mall driveway. Creator steps out onto polished pavement, adjusting her hot pink mirror-work cape.
+* **Cinematography & Speed Ramping**: 00:00 - 00:01s: 1.0x Normal entrance ➔ 00:01 - 00:02.5s: 0.4x Slow-mo 120fps glide showing cape flutter ➔ 00:02.5 - 00:03s: 1.3x Snap transition.
+* **Creator Pose & Duchenne Micro-Expression**: Confident high-status entry, authentic Duchenne smiling eyes crinkling, candid lips greeting lens naturally, no frozen mouth.
+* **Lip Delivery**: Natural conversational articulation matching voice-over speech.
+* 🟡 **ON-SCREEN TEXT**: "HEADING TO PICK UP MY DESIGNER FIT... 🏎️✨"
+* 🎙️ **Spoken Dialogue**: "Sports car se 50 hazaar ka reserved boutique outfit lene aayi thi..."
+* **Foley Sound Timeline**: 00:00.2s: Low V8 engine purr & heavy door thud | 00:01.3s: Stiletto clicks on high-gloss marble | -8dB BGM ducking during dialogue.
+* **Transition**: Fast whip-pan to mall interior.
+
+### 🎬 SCENE 2 [00:03 - 00:07] — 🛍️ LUXURY MALL STRIDE & CONFLICT
+* **Story Purpose**: Establish venue, build tension, and delay information payoff.
+* **Visual Action**: Creator walks through the high-end mall atrium, hot pink cape flowing behind her. She looks around, then addresses the camera directly with an expressive shocked storytelling face.
+* **Cinematography & Speed Ramping**: 00:00 - 00:04s: 1.0x Continuous Steadicam backward glide with organic fluid motion.
+* **Creator Pose & Duchenne Micro-Expression**: Elegant posture, subtle hair tuck, intrigued storytelling gaze, micro-eyebrow raise discovering unexpected boutique complication.
+* **Lip Delivery**: 100% Direct Speech. Articulating words naturally with synchronized lips matching syllables.
+* 🟡 **ON-SCREEN TEXT**: "BUT THE BOUTIQUE HAD A SURPRISE WAITING 😳"
+* 🎙️ **Spoken Dialogue**: "...lekin boutique counter par pahuchte hi pata chala they gave my outfit away!"
+* **Foley Sound Timeline**: 00:00.5s: Grand mall atrium acoustics & faint distant chatter | 00:02.1s: Designer handbag chain clink | -8dB BGM ducking during dialogue.
+* **Transition**: Smooth match-cut onto boutique entrance.
+
+### 🎬 SCENE 3 [00:07 - 00:11] — ✉️ THE BOUTIQUE REVEAL & VALUE TWIST
+* **Story Purpose**: Open loop resolution with high-satisfaction price reveal.
+* **Visual Action**: Creator holds the boutique envelope with an apologetic note, pans up smiling playfully in her full pink mirror-work sharara set.
+* **Cinematography & Speed Ramping**: 00:00 - 00:01s: 1.2x Push-in ➔ 00:01 - 00:03s: 0.5x Slow-motion 120fps fabric inspection ➔ 00:03 - 00:04s: 1.0x Reset.
+* **Creator Pose & Duchenne Micro-Expression**: Stunned delight, genuine laughter parting lips, playful shoulder shrug admiring mirror fit reflection, authentic eye crinkles.
+* **Lip Delivery**: 100% Direct Speech. Natural mouth movement articulating the reveal line with candid warmth.
+* 🟡 **ON-SCREEN TEXT**: "THIS LOOK ISN'T ₹50K... IT'S ₹499! 🤫"
+* 🎙️ **Spoken Dialogue**: "Par unhone mujhe yeh note diya aur sach batau? This look isn't 50k, yeh sirf ₹499 ka Meesho find hai!"
+* **Foley Sound Timeline**: 00:00.8s: Velvet curtain pull & luxury boutique register chime | 00:02.2s: Fabric glide across satin hanger | -8dB BGM ducking.
+* **Transition**: Snap-cut to outdoor terrace café.
+
+### 🎬 SCENE 4 [00:11 - 00:15] — ☕ TERRACE CAFÉ TWIRL & FIT CHECK
+* **Story Purpose**: Showcase fabric motion, wide-leg sharara drape, and cape flare.
+* **Visual Action**: Outdoor sunlit aesthetic café terrace (South Mumbai / Bandra). Creator executes a fluid 360° ghera twirl, letting the mirror-work border catch the sunlight.
+* **Cinematography & Speed Ramping**: 00:00 - 00:00.8s: 1.0x ➔ 00:00.8 - 00:03.2s: 0.35x Ultra slow-motion optical flow showing 360° fabric flare ➔ 00:03.2 - 00:04s: 1.2x Catch.
+* **Creator Pose & Duchenne Micro-Expression**: Dynamic turn, light hand on snatched waistline, radiant Duchenne smiling eyes catching golden sunlight, genuine joy.
+* **Lip Delivery**: Natural conversational speech articulation while turning.
+* 🟡 **ON-SCREEN TEXT**: "CANCELLED DRESS CODE, KEPT THE VIBE 🤌"
+* 🎙️ **Spoken Dialogue**: "Dress code cancel karke seedha café aa gayi... just look at this mirror-work ghera and drape!"
+* **Foley Sound Timeline**: 00:00.4s: Terrace café espresso cup clinking porcelain saucer | 00:01.8s: Gentle afternoon breeze whisper | -8dB BGM ducking.
+* **Transition**: Slow zoom into final editorial pose.
+
+### 🎬 SCENE 5 [00:15 - 00:18] — 📸 CAFÉ TABLE POSE & CTA
+* **Story Purpose**: Final CTA and high-rewatch loop ending.
+* **Visual Action**: Creator seated elegantly at marble outdoor table, gold handbag beside espresso cup, winks playfully and points finger downward.
+* **Cinematography & Speed Ramping**: 00:00 - 00:02.5s: 1.0x Confident flex pose ➔ 00:02.5 - 00:03s: 2.0x High-speed snap whip loop cut back to Scene 1.
+* **Creator Pose & Duchenne Micro-Expression**: High-fashion cross-leg pose, radiant triumphant Duchenne smile, subtle playful wink, effortlessly transitioning into loop bookmark pose.
+* **Lip Delivery**: Natural speech articulation on final CTA lines.
+* 🟡 **ON-SCREEN TEXT**: "COMMENT 'STYLE' FOR CODE & LINK 👇"
+* 🎙️ **Spoken Dialogue**: "Night saved! Comment karo 'STYLE' aur link direct aapke DM me!"
+* **Foley Sound Timeline**: 00:01.5s: Double camera shutter click | 00:02.8s: Bass beat impact for seamless loop reverberation | -8dB BGM ducking.
+* **Transition**: Seamless loop connecting back to Scene 1 car door opening.
+
+---
+
+## 📐 TAB 3 — VISUAL SHOT LIST & CAMERA SPEED RAMPING MATRIX
+
+| Scene # | Timestamp | Framing | Lens & Angle | Camera Movement & Speed Ramp | Cinematography Standard | Key Props / Interaction |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **1** | `00:00 - 00:03` | Full-Length | 28mm Low-Angle | 1.0x entry ➔ 0.4x slow-mo 120fps ➔ 1.3x snap | 8K UHD, Arri Alexa Mini LF, 35mm f/1.8 | Matte Black Sports Coupe, Hot Pink Cape |
+| **2** | `00:03 - 00:07` | Mid-Shot | 35mm Eye-Level | 1.0x Smooth Steadicam Forward Glide | 8K UHD, Arri Alexa Mini LF, shallow DOF | Half-Moon Gold Handbag, Arched Columns |
+| **3** | `00:07 - 00:11` | Medium Close-Up | 50mm Portrait | 1.2x Push-In ➔ 0.5x Macro Tilt-Up | 8K UHD, photorealistic skin micro-pores | Boutique Card / Envelope, Mirror-Work Bodice |
+| **4** | `00:11 - 00:15` | Three-Quarter | 35mm Wide | 0.35x Ultra Slow-Mo 360° Orbital Pan | 8K UHD, authentic fabric gravity drape | Wide-Leg Sharara Hem, Glass Balcony |
+| **5** | `00:15 - 00:18` | Close-Up | 85mm Portrait | 1.0x Eye-Level ➔ 2.0x Snap Whip Loop | 8K UHD, creamy bokeh, natural skin tones | Marble Table, Artisan Espresso Cup |
+
+---
+
+## 🤖 TAB 4 — GOOGLE FLOW & KLING AI PROMPTS (8K & 14-POINT MASTER LOCK)
+
+```text
+SCENE 1 — LUXURY CAR ENTRY & HOOK
+Voice-over:
+"Sports car se 50 hazaar ka reserved boutique outfit lene aayi thi..."
+
+Visual Action:
+Vertical 9:16 low-angle tracking shot. A beautiful 24-year-old Indian woman (CREATOR_REFERENCE / Image 1: exact facial features, dark hair, natural warm Indian skin tone, and authentic body proportions) stepping out of a matte black luxury sports coupe onto a luxury high-street promenade driveway. She wears a vibrant hot pink embroidered crop top, wide-leg sharara trousers, and a long flowing floor-length cape with mirror-work borders (PRODUCT_REFERENCE). Afternoon golden sunlight reflects off the car body. High aesthetic quality, sharp focus, 8K 60fps photorealistic cinematic commercial ad.
+
+8K UHD Cinematography Standard:
+Master shot on Arri Alexa Mini LF, 35mm prime f/1.8 lens, shallow depth of field with organic bokeh. 8K UHD clarity, authentic skin micro-pores and subtle peach fuzz, authentic fabric drape/gravity physics, natural volumetric daylight flares, zero AI plastic smoothing, zero waxy skin.
+
+Facial Micro-Expressions & Duchenne Smile:
+Confident high-status entry, authentic Duchenne smiling eyes crinkling at corners, candid lips greeting lens naturally with lifelike speech articulation, no frozen mouth or plastic grin.
+
+Camera Motion & Speed Ramping:
+[Speed Ramp: 00:00 - 00:01s: 1.0x Normal entry ➔ 00:01 - 00:02.5s: 0.4x Slow-mo 120fps glide ➔ 00:02.5 - 00:03s: 1.3x Snap transition]. Lens: 28mm low-angle fluid tracking push-in with Steadicam stabilization.
+
+Synchronized SFX Timeline:
+[Foley Cues: 00:00.2s: Low V8 engine purr & heavy door thud | 00:01.3s: Stiletto clicks on high-gloss marble | -8dB BGM ducking during dialogue].
+
+Subject & Character Lock:
+CREATOR_REFERENCE (Image 1). 100% facial and physical identity consistency with the attached creator reference photo (Image 1). Use exact eyes, smile, cheekbones, dark hair, natural Indian skin undertone, and body silhouette from the reference photo. Do NOT generate a generic face; preserve the exact woman from Image 1 across all scenes.
+
+Background Isolation Lock:
+STRICTLY DISCARD and IGNORE the original background, room, bedroom, or home interior from CREATOR_REFERENCE. Extract ONLY the human subject. Place creator exclusively on the high-street promenade outside the sports coupe.
+
+Garment Lock:
+PRODUCT_REFERENCE. Exact hot pink shade, mirror-work embellishments along V-neckline and cape trim. Tailored luxury drape, authentic fabric texture matching scene lighting.
+
+Lip Delivery:
+Natural speech articulation. Creator looks directly into camera lens, actively speaking dialogue aloud with synchronized lip movement.
+
+Duration:
+3 seconds.
+
+Avoid / Negative Prompt:
+original photo background, background bleed from CREATOR_REFERENCE, bedroom backdrop, domestic home interior, repeating static room, altered facial identity, generic model face, face swap distortion, waxy skin, plastic skin smoothing, frozen mouth smile, sliding feet, floating heels, third leg, extra limbs, blurry, low resolution, glitch.
+```
+
+```text
+SCENE 2 — MALL ATRIUM STRIDE & CONFLICT
+Voice-over:
+"...lekin boutique counter par pahuchte hi pata chala they gave my outfit away!"
+
+Visual Action:
+Medium full-length 9:16 tracking shot of the Indian woman (CREATOR_REFERENCE / Image 1: exact facial features, dark wavy hair, natural skin tone, and authentic body proportions) walking confidently through a luxury mall atrium. Hot pink cape (PRODUCT_REFERENCE) flows gracefully behind her. She holds a half-moon gold-and-white handbag and addresses camera with an expressive shocked storytelling face. High aesthetic quality, sharp focus, 8K 60fps photorealistic cinematic commercial ad.
+
+8K UHD Cinematography Standard:
+Master shot on Arri Alexa Mini LF, 35mm prime f/1.8 lens, shallow depth of field with organic bokeh. 8K UHD resolution, true-to-life skin micro-pores, authentic fabric gravity drape, natural indoor atrium lighting reflections, zero plastic smoothing.
+
+Facial Micro-Expressions & Duchenne Smile:
+Intrigued storytelling gaze, micro-eyebrow raise discovering unexpected boutique display, animated speech articulation matching spoken syllables, authentic eye engagement, zero frozen mouth.
+
+Camera Motion & Speed Ramping:
+[Speed Ramp: 00:00 - 00:04s: 1.0x Continuous conversational pace with subtle micro-stabilized Steadicam drift]. Lens: 35mm eye-level backward tracking shot.
+
+Synchronized SFX Timeline:
+[Foley Cues: 00:00.5s: Grand mall atrium acoustics & faint chatter | 00:02.1s: Designer handbag chain clink | -8dB BGM ducking during dialogue].
+
+Subject & Character Lock:
+CREATOR_REFERENCE (Image 1). 100% facial and physical identity consistency with the attached creator reference photo. Retain facial structure, dark wavy hair, natural skin tone, and body proportions.
+
+Background Isolation Lock:
+STRICTLY DISCARD reference photo background. Render creator exclusively inside the grand luxury mall atrium with tall marble columns and designer store windows.
+
+Garment Lock:
+PRODUCT_REFERENCE. Hot pink sharara set, mirror embroidery on bodice border, authentic drape physics.
+
+Lip Delivery:
+100% On-Camera Direct Speech. Creator speaks dialogue naturally into camera with clear mouth articulation and engaging eye contact.
+
+Duration:
+4 seconds.
+
+Avoid / Negative Prompt:
+original photo background, background bleed from CREATOR_REFERENCE, bedroom backdrop, domestic interior, repeating room, no closed mouth while speaking, no frozen lips, no face warping, no background distortion, no waxy skin, no extra limbs.
+```
+
+```text
+SCENE 3 — BOUTIQUE REVEAL & VALUE TWIST
+Voice-over:
+"Par unhone mujhe yeh note diya aur sach batau? This look isn't 50k, yeh sirf ₹499 ka Meesho find hai!"
+
+Visual Action:
+Mid-shot 9:16 vertical framing of the Indian woman (CREATOR_REFERENCE / Image 1: exact facial features, natural skin tone, authentic body proportions) holding an elegant off-white boutique envelope, then looking up into camera with a triumphant, playful smile. The hot pink mirror-work bodice (PRODUCT_REFERENCE) sparkles under warm indoor lights. High aesthetic quality, sharp focus, 8K 60fps photorealistic cinematic ad.
+
+8K UHD Cinematography Standard:
+Master shot on Arri Alexa Mini LF, 50mm portrait lens, 8K UHD clarity, photorealistic skin micro-pores and peach fuzz, authentic fabric drape/gravity physics, natural light reflections, zero AI plastic smoothing.
+
+Facial Micro-Expressions & Duchenne Smile:
+Stunned delight, genuine laughter parting lips, playful shoulder shrug admiring mirror fit reflection, authentic eye crinkles with radiant warmth.
+
+Camera Motion & Speed Ramping:
+[Speed Ramp: 00:00 - 00:01s: 1.2x Push-in ➔ 00:01 - 00:03s: 0.5x Slow-motion 120fps fabric inspection ➔ 00:03 - 00:04s: 1.0x Reset]. Lens: 50mm portrait tilt-up and reveal.
+
+Synchronized SFX Timeline:
+[Foley Cues: 00:00.8s: Velvet curtain pull & luxury boutique register chime | 00:02.2s: Fabric glide across satin hanger | -8dB BGM ducking].
+
+Subject & Character Lock:
+CREATOR_REFERENCE (Image 1). 100% facial fidelity, dark hair, natural Indian skin tone, authentic body silhouette.
+
+Background Isolation Lock:
+STRICTLY DISCARD reference photo background. Render creator exclusively inside the luxury designer flagship boutique with polished brass racks and velvet lounge seating.
+
+Garment Lock:
+PRODUCT_REFERENCE. Deep V-neckline crop top with intricate mirror work trim and palazzo waist.
+
+Lip Delivery:
+100% On-Camera Direct Speech. Natural speech articulation with playful shoulder shrug while speaking the reveal line.
+
+Duration:
+4 seconds.
+
+Avoid / Negative Prompt:
+original photo background, background bleed from CREATOR_REFERENCE, bedroom backdrop, domestic home interior, no closed mouth while voice speaks, no waxy skin, no sliding shoes, no distorted hands, no floating heels.
+```
+
+```text
+SCENE 4 — TERRACE CAFÉ TWIRL & FIT CHECK
+Voice-over:
+"Dress code cancel karke seedha café aa gayi... just look at this mirror-work ghera and drape!"
+
+Visual Action:
+Three-quarter 9:16 vertical framing in an outdoor sunlit aesthetic Indian café promenade. The Indian woman (CREATOR_REFERENCE / Image 1: exact facial features, long dark hair, natural warm Indian skin tone) performs a fluid 360-degree ghera twirl, showing the billowing wide-leg sharara drape and cape flare (PRODUCT_REFERENCE). Tiny mirrors sparkle in golden hour sun. High aesthetic quality, sharp focus, 8K 60fps photorealistic cinematic ad.
+
+8K UHD Cinematography Standard:
+Master shot on Arri Alexa Mini LF, 35mm wide lens, golden hour 5200K lighting, shallow depth of field, 8K UHD clarity, authentic fabric drape and wave ripples.
+
+Facial Micro-Expressions & Duchenne Smile:
+Serene luxury aesthetic smile, warm direct eye contact over espresso cup, conversational warmth, radiant Duchenne smiling eyes, zero frozen grin.
+
+Camera Motion & Speed Ramping:
+[Speed Ramp: 00:00 - 00:00.8s: 1.0x ➔ 00:00.8 - 00:03.2s: 0.35x Ultra slow-motion optical flow showing 360° fabric flare ➔ 00:03.2 - 00:04s: 1.2x Catch]. Lens: 35mm wide 360° dynamic circular orbit tracking pan.
+
+Synchronized SFX Timeline:
+[Foley Cues: 00:00.4s: Terrace café espresso cup clinking porcelain saucer | 00:01.8s: Gentle afternoon breeze whisper | -8dB BGM ducking].
+
+Subject & Character Lock:
+CREATOR_REFERENCE (Image 1). 100% facial and physical identity consistency with the attached creator reference photo.
+
+Background Isolation Lock:
+STRICTLY DISCARD reference photo background. Render creator exclusively on the sunlit open-air rooftop café terrace with city skyline and ambient potted plants.
+
+Garment Lock:
+PRODUCT_REFERENCE. Exact hot pink sharara flare and cape movement with authentic fabric physics.
+
+Lip Delivery:
+Natural conversational articulation. Creator speaks effortlessly into camera while twirling with radiant energy.
+
+Duration:
+4 seconds.
+
+Avoid / Negative Prompt:
+original photo background, background bleed from CREATOR_REFERENCE, bedroom backdrop, domestic room, repeating room, no closed mouth while speaking, no morphing fabric patterns, no extra legs, no background warping, no waxy skin.
+```
+
+```text
+SCENE 5 — CAFÉ TABLE POSE & CTA
+Voice-over:
+"Night saved! Comment karo 'STYLE' aur link direct aapke DM me!"
+
+Visual Action:
+Close-up 9:16 portrait. The Indian woman (CREATOR_REFERENCE / Image 1: exact facial features, warm Indian skin tone, natural eye shape) seated at a chic outdoor marble café table with an espresso cup. She leans in close toward the lens, winks playfully with a radiant smile, and points her index finger downward toward the lower frame. High aesthetic quality, sharp focus, 8K 60fps photorealistic ad.
+
+8K UHD Cinematography Standard:
+Master shot on Arri Alexa Mini LF, 85mm luxury portrait lens, sharp focus, creamy background bokeh, 8K UHD resolution, authentic skin micro-texture with visible pores.
+
+Facial Micro-Expressions & Duchenne Smile:
+Radiant triumphant Duchenne smile with genuine eye crinkling, subtle playful wink, effortless transition into loop bookmark pose, lifelike speech articulation.
+
+Camera Motion & Speed Ramping:
+[Speed Ramp: 00:00 - 00:02.5s: 1.0x Confident flex pose ➔ 00:02.5 - 00:03s: 2.0x High-speed snap whip loop cut back to Scene 1]. Lens: 85mm luxury portrait lens with slow push-in.
+
+Synchronized SFX Timeline:
+[Foley Cues: 00:01.5s: Double camera shutter click | 00:02.8s: Bass beat impact for seamless loop reverberation | -8dB BGM ducking].
+
+Subject & Character Lock:
+CREATOR_REFERENCE (Image 1). 100% facial fidelity, warm Indian skin tone, natural eye shape and body silhouette.
+
+Background Isolation Lock:
+STRICTLY DISCARD reference photo background. Render creator exclusively seated at the luxury outdoor marble café table.
+
+Garment Lock:
+PRODUCT_REFERENCE. Hot pink neckline and mirror-work trim visible at collarbone.
+
+Lip Delivery:
+100% On-Camera Direct Speech. Creator speaks the CTA line directly into lens with synchronized lip motion and an expressive wink.
+
+Duration:
+3 seconds.
+
+Avoid / Negative Prompt:
+original photo background, background bleed from CREATOR_REFERENCE, bedroom backdrop, domestic room, no closed mouth while speaking, no frozen expression, no distorted fingers, no face blurring, no waxy skin.
+```
+
+---
+
+## 🎙️ TAB 5 — VOICE-OVER STUDIO
+
+### 🎙️ MASTER CONTINUOUS VOICE-OVER SCRIPT (1-TAKE RECORDING)
+> "Sports car se 50 hazaar ka reserved boutique outfit lene aayi thi... lekin boutique counter par pahuchte hi pata chala they gave my outfit away! Par unhone mujhe yeh note diya aur sach batau? This look isn't 50k, yeh sirf ₹499 ka Meesho find hai! Dress code cancel karke seedha café aa gayi... just look at this mirror-work ghera and drape! Night saved! Comment karo 'STYLE' aur link direct aapke DM me!"
+
+### 📊 Audio Pacing & Cadence Breakdown
+* **Target Spoken Duration**: `14.5 Seconds` (From 00:01.5 to 00:16.5)
+* **Total Word Count**: `65 Words`
+* **Calculated Speed**: `~4.4 Words/Second` (Natural fast-paced Indian social media cadence)
+* **Recommended Voice Profile**: **👩 Swara (hi-IN-SwaraNeural)**
+
+---
+
+## 🟡 TAB 6 — ON-SCREEN TEXT OVERLAYS
+* **[00:00 - 00:03]**: `HEADING TO PICK UP MY DESIGNER FIT... 🏎️✨`
+* **[00:03 - 00:07]**: `BUT THE BOUTIQUE HAD A SURPRISE WAITING 😳`
+* **[00:07 - 00:11]**: `THIS LOOK ISN'T ₹50K... IT'S ₹499! 🤫`
+* **[00:11 - 00:15]**: `CANCELLED DRESS CODE, KEPT THE VIBE 🤌`
+* **[00:15 - 00:18]**: `COMMENT 'STYLE' FOR CODE & LINK 👇`
+
+---
+
+## 🎧 TAB 7 — SOUND DESIGN & FOLEY TIMELINE
+* **Recommended Track Vibe**: Luxury Chill House / Slowed Reverb Afrobeat (118 BPM)
+* **Audio Ducking**: -8dB Background Music Ducking during all spoken voice-over lines
+* **Timeline Foley SFX Cues**:
+  * `00:00.2`: Low V8 sports car engine rumble + heavy door thud.
+  * `00:01.3`: Stiletto clicks on high-gloss marble driveway.
+  * `00:02.1`: Designer handbag chain clink in atrium.
+  * `00:07.2`: Crisp paper envelope unfold + boutique register chime.
+  * `00:11.0`: Bass drop on café 360° ghera twirl.
+  * `00:16.5`: Double camera shutter click with loop impact reverberation.
+
+---
+
+## 🚀 TAB 8 — INSTAGRAM SEO SUITE
+* **High-CTR Reel Title**: The ₹499 Luxury Boutique Secret 🤫✨
+* **Algorithmic Instagram Caption**:
+  When your boutique plan gets cancelled but your ₹499 Meesho outfit saves the whole night! 🏎️✨
+  
+  Everyone thought this hot pink mirror-work sharara set was a 50k designer ensemble... the drape and cape flare are unbelievable! 🤌
+  
+  💰 Price: ₹499 | Code: s-1894451
+  📩 Comment "STYLE" and I will DM you the direct link and sizing details right away! 👇
+* **Targeted Hashtags**: #MeeshoFinds #LuxuryOnABudget #ShararaSet #PartyWearLook #IndianFashion #ReelsIndia #OOTDIndia #AffordableFashion
+
+---
+
+## 📊 TAB 9 — RETENTION SCORECARD & REWATCH POTENTIAL
+* **Hook Power**: 96/100
+* **Curiosity Maintenance**: 94/100
+* **Story Progression**: 95/100
+* **Visual Variety & Pacing**: 96/100
+* **Emotional Engagement**: 93/100
+* **Surprise & Payoff**: 97/100
+* **Rewatch / Loop Potential**: 95/100
+* **Overall Retention Score**: **95.1 / 100 (Viral Tier)**
+"""
+
+def render_lifestyle_vlog_studio():
+    """
+    Renders the dedicated Lifestyle Studio with:
+    1. 🎯 AI Lifestyle Reel Story Director (Phase 1 Foundation)
+    2. 🎬 Full 9-Tab Production Suite & Google Flow Video Engine
+    """
+    from lifestyle_director.ui.director_ui import render_lifestyle_story_director
+
+    lifestyle_subtab = st.radio(
+        "🎛️ Select Lifestyle Studio Module:",
+        [
+            "🎯 AI Lifestyle Reel Story Director (Phase 1 Foundation)",
+            "🎬 Full 9-Tab Production Suite & Google Flow Prompts"
+        ],
+        horizontal=True,
+        index=0,
+        key="lifestyle_active_subtab_selector"
+    )
+
+    env_key = get_active_gemini_key()
+
+    if "AI Lifestyle Reel Story Director" in lifestyle_subtab:
+        render_lifestyle_story_director(env_api_key=env_key)
+        return
+
+    # ---------------------------------------------------------
+    # 🎬 Full 9-Tab Production Suite & Google Flow Prompts
+    # ---------------------------------------------------------
+    st.markdown("### 🌴 Fictional Lifestyle Vlog AI Agent (9-Tab Production Suite)")
+    st.markdown(
+        "Generate captivating, curiosity-driven lifestyle vlog stories for Instagram Reels & YouTube Shorts. "
+        "Engineered around: **Hook ➔ Curiosity ➔ Open Loop ➔ Surprise ➔ Payoff** with Google Flow prompts, "
+        "optional Neural voice-over, and full 9-tab production kits."
+    )
+    lifestyle_vmode = render_studio_visual_attention_banner("Lifestyle Vlog", key_prefix="lifestyle_vlog_va")
+
+    # Initialize default high-retention package with full voice-over if not yet set
+    if "latest_lifestyle_package" not in st.session_state:
+        if "current_life_project" in st.session_state and st.session_state["current_life_project"].story_blueprint:
+            from lifestyle_director.ui.director_ui import convert_blueprint_to_9tab_package
+            st.session_state["latest_lifestyle_package"] = convert_blueprint_to_9tab_package(st.session_state["current_life_project"])
+        else:
+            st.session_state["latest_lifestyle_package"] = DEFAULT_LIFESTYLE_VLOG_PACKAGE
+        st.session_state["latest_lifestyle_vo_enabled"] = True
+
+    if not env_key:
+        st.warning("⚠️ Please provide a Gemini API Key in the sidebar to generate live lifestyle vlogs.")
+
+    # 1. Quick 1-Click Story Inspiration Buttons
+    st.markdown("##### 💡 1-Click Viral Story Presets:")
+    col_p1, col_p2, col_p3, col_p4 = st.columns(4)
+    with col_p1:
+        if st.button("🏎️ Sports Car & Mall", use_container_width=True, key="btn_life_p1"):
+            st.session_state["life_type_idx"] = 1
+            st.session_state["life_idea_input"] = "Driving to a luxury shopping mall in a matte black sports coupe, heading to high-end boutiques and discovering an unexpected viral fashion piece that turns everyone's heads."
+            st.session_state["life_loc"] = "Luxury Fashion Mall & Boulevard"
+            st.session_state["life_veh"] = "Matte Black Luxury Sports Coupe"
+            st.session_state.pop("latest_lifestyle_package", None)
+            st.session_state["latest_lifestyle_vo_enabled"] = True
+            st.rerun()
+    with col_p2:
+        if st.button("🏨 5-Star Resort Suite", use_container_width=True, key="btn_life_p2"):
+            st.session_state["life_type_idx"] = 5
+            st.session_state["life_idea_input"] = "Checking into a breathtaking luxury oceanfront presidential villa. Unpacking vacation outfits and uncovering an exclusive VIP rooftop party invite."
+            st.session_state["life_loc"] = "Private Oceanfront Resort Villa & Rooftop"
+            st.session_state["life_veh"] = "White Range Rover SUV"
+            st.session_state.pop("latest_lifestyle_package", None)
+            st.rerun()
+    with col_p3:
+        if st.button("☕ Aesthetic Indian Café", use_container_width=True, key="btn_life_p3"):
+            st.session_state["life_type_idx"] = 6
+            st.session_state["life_idea_input"] = "A serene aesthetic morning walk to an artisan sunlit Indian rooftop café in Bandra / South Mumbai, ordering an iced latte and capturing a candid high-fashion moment."
+            st.session_state["life_loc"] = "Aesthetic Indian High-Street Café & Sunlit Promenade (Bandra / Khan Market)"
+            st.session_state["life_veh"] = "Luxury Sunroof Sedan / Premium Electric Scooter"
+            st.session_state.pop("latest_lifestyle_package", None)
+            st.rerun()
+    with col_p4:
+        if st.button("✈️ First-Class Airport", use_container_width=True, key="btn_life_p4"):
+            st.session_state["life_type_idx"] = 4
+            st.session_state["life_idea_input"] = "Strutting through the VIP international airport lounge in sleek airport chic co-ord set, rolling luxury luggage towards a private gate for a spontaneous weekend trip."
+            st.session_state["life_loc"] = "VIP First-Class Airport Terminal & Runway"
+            st.session_state["life_veh"] = "Executive Black SUV"
+            st.session_state.pop("latest_lifestyle_package", None)
+            st.rerun()
+
+    st.markdown("---")
+
+    col_life_left, col_life_right = st.columns([1.1, 0.9])
+
+    with col_life_left:
+        st.markdown("#### 1️⃣ Story Premise & Creative Blueprint")
+        
+        col_m1, col_m2 = st.columns([1.2, 1])
+        with col_m1:
+            life_story_type = st.selectbox(
+                "🎬 Story Archetype",
+                [
+                    "Daily Lifestyle",
+                    "Luxury Lifestyle",
+                    "Fashion & Styling",
+                    "Shopping Spree",
+                    "Travel & Airports",
+                    "Hotel & 5-Star Resort",
+                    "Café & Fine Dining",
+                    "Weekend Getaway",
+                    "VIP Event & Nightlife",
+                    "Adventure & Road Trip",
+                    "Custom"
+                ],
+                index=st.session_state.get("life_type_idx", 1),
+                key="life_story_type_select"
+            )
+        with col_m2:
+            life_mode = st.radio(
+                "🎯 Content Mode",
+                ["✨ Fictional / AI-Generated Mode", "📸 Real-Life Mode"],
+                index=0,
+                key="life_mode_radio",
+                help="Fictional mode creatively invents luxury experiences with mandatory entertainment disclosure. Real-Life mode preserves actual events."
+            )
+
+        life_idea = st.text_area(
+            "✍️ Story Premise & Idea (What happens in the vlog?)",
+            value=st.session_state.get("life_idea_input", "Today I am heading to an exclusive luxury mall in a sports car to pick up an outfit, but an unexpected surprise waiting at the boutique changes my entire evening plan."),
+            height=110,
+            key="life_idea_box",
+            help="Describe the creator's journey, curiosity hook, locations, or surprise payoff."
+        )
+
+        col_l_env1, col_l_env2 = st.columns(2)
+        with col_l_env1:
+            life_loc = st.text_input("📍 Setting / Location", value=st.session_state.get("life_loc", "Luxury Indian Mall Atrium & High-Street Café"), key="life_loc_input")
+        with col_l_env2:
+            life_veh = st.text_input("🚗 Vehicle / Luxury Prop", value=st.session_state.get("life_veh", "Matte Black Luxury Sports Coupe"), key="life_veh_input")
+
+        col_l_aud1, col_l_aud2 = st.columns(2)
+        with col_l_aud1:
+            life_visual_style = st.selectbox(
+                "🎨 Visual Aesthetic Style",
+                ["Luxury Cinematic (4K Soft Sunlight)", "Realistic Natural Vlog", "Instagram UGC Influencer", "Travel Cinematic (Vibrant)", "High-Fashion Editorial (Vogue)"],
+                index=0,
+                key="life_visual_style_select"
+            )
+        with col_l_aud2:
+            life_duration = render_duration_selector(key_prefix="life_dur", default_val="30s", label="⏱️ Reel Duration")
+
+    with col_life_right:
+        st.markdown("#### 2️⃣ Creator, Outfit & Audio Settings")
+
+        life_creator_file = st.file_uploader(
+            "👤 Creator Face & Identity Photo (Optional)",
+            type=["jpg", "jpeg", "png", "webp"],
+            key="life_creator_upload",
+            help="Locks 100% facial identity, hairstyle, skin undertone, and body proportions across all scenes."
+        )
+        st.caption("🛡️ **Subject Isolation Active**: Photo background is automatically stripped and ignored. Creator identity is placed exclusively inside each scene's dynamic cinematic venue.")
+        if not life_creator_file and st.button("✨ Use Sample Creator Model", key="btn_life_sample_creator"):
+            st.session_state["life_creator_bytes"] = load_sample_file("sample_creator.jpg")
+            st.toast("Loaded sample creator profile!", icon="🌸")
+
+        life_outfit_cat = st.selectbox(
+            "👗 Outfit Style",
+            [
+                "👗 Western Chic Dress & Tailored Blazer",
+                "🥻 Royal Festive Sharara / Kurti Set",
+                "👚 Casual Luxury Co-ord Set & Sunglasses",
+                "✨ Evening Party Dress & Designer Bag",
+                "✈️ Sleek Airport Travel Wear & Luggage",
+                "👖 Streetwear Denim & Cropped Jacket"
+            ],
+            index=0,
+            key="life_outfit_select"
+        )
+
+        with st.expander("🛍️ Optional: Link Meesho Outfit / Dupe Price Twist"):
+            st.caption("Give your lifestyle vlog a viral shopping angle: Creator in luxury setting wearing an affordable ₹499 Meesho look!")
+            col_l_m1, col_l_m2 = st.columns(2)
+            with col_l_m1:
+                life_m_title = st.text_input("Garment Title", value="", placeholder="e.g. Designer Satin Cowl Dress", key="life_m_title")
+                life_m_price = st.text_input("Meesho Price (₹)", value="₹499", key="life_m_price")
+            with col_l_m2:
+                life_m_code = st.text_input("Meesho Code", value="s-1894451", key="life_m_code")
+                life_m_link = st.text_input("Affiliate / Buy Link", value="", placeholder="https://www.meesho.com/...", key="life_m_link")
+            life_prod_file = st.file_uploader("Upload Outfit Photo (Optional)", type=["jpg", "jpeg", "png", "webp"], key="life_prod_upload")
+
+        st.markdown("##### 🎙️ Audio & Voice-Over Configuration")
+        life_audio_mode = st.radio(
+            "🎙️ Audio & Narration Format",
+            [
+                "🎙️ Spoken Voice-Over (Full Scene Dialogue + 1-Take Voice Script + Swara Neural HD Audio)",
+                "🔇 Pure Visual Storytelling (Trending Music & Ambient SFX — Closed Lips / Zero Voice-Over)"
+            ],
+            index=0 if st.session_state.get("life_audio_mode_choice", "voiceover") == "voiceover" else 1,
+            key="life_audio_mode_radio",
+            help="Default is Spoken Voice-Over. Select Pure Visual if you want creator lips strictly closed with no spoken words."
+        )
+        life_vo_toggle = "Spoken Voice-Over" in life_audio_mode
+        st.session_state["life_audio_mode_choice"] = "voiceover" if life_vo_toggle else "silent"
+
+        if life_vo_toggle:
+            st.success("🎙️ **Voice-Over Active**: Full spoken dialogue per scene + Tab 5 Master 1-Take Script + Swara Neural HD Audio will be generated!")
+        else:
+            st.info("🔇 **Pure Visual Active**: Video prompts lock closed lips for zero AI mouth glitches. An optional voice-over script will still be provided in Tab 5.")
+
+        col_vo1, col_vo2 = st.columns(2)
+        with col_vo1:
+            life_lang = st.selectbox("🌐 Spoken Language", ["Hinglish", "Hindi", "English"], index=0, key="life_lang_select")
+        with col_vo2:
+            life_vo_style = st.selectbox(
+                "🗣️ Voice Narration Tone",
+                ["Luxury & Calm", "Relatable Bestie Vlog", "Energetic & Sassy", "Cinematic Storyteller"],
+                index=0,
+                key="life_vo_style_select",
+                disabled=not life_vo_toggle
+            )
+        life_platform = st.selectbox("📱 Target Platform", ["Instagram Reels", "YouTube Shorts", "Multi-Platform"], index=0, key="life_plat_select")
+
+    active_life_creator = life_creator_file.read() if life_creator_file else st.session_state.get("life_creator_bytes")
+    active_life_prod = life_prod_file.read() if 'life_prod_file' in locals() and life_prod_file else None
+
+    st.markdown("---")
+    gen_lifestyle_clicked = st.button(
+        "🚀 Generate Fictional Lifestyle Vlog & Google Flow Prompts",
+        type="primary",
+        use_container_width=True,
+        key="btn_gen_lifestyle"
+    )
+
+    if gen_lifestyle_clicked:
+        if not env_key:
+            st.error("⚠️ Gemini API Key Required. Please set it in the sidebar or `.env` file.")
+        else:
+            with st.spinner("🎬 Generating Aspirational Lifestyle Vlog & 9-Tab Production Package with Google Flow Prompts..."):
+                res_vlog = generate_lifestyle_vlog_package(
+                    story_type=life_story_type,
+                    story_idea=life_idea,
+                    content_mode=life_mode,
+                    duration=life_duration,
+                    visual_style=life_visual_style,
+                    creator_bytes=active_life_creator,
+                    product_bytes=active_life_prod,
+                    outfit_type=life_outfit_cat,
+                    location_name=life_loc,
+                    vehicle_name=life_veh,
+                    language=life_lang,
+                    voiceover_enabled=life_vo_toggle,
+                    voice_style=life_vo_style,
+                    target_audience="Fashion & Luxury Lifestyle",
+                    target_platform=life_platform,
+                    meesho_title=life_m_title if 'life_m_title' in locals() else "",
+                    meesho_price=life_m_price if 'life_m_price' in locals() else "",
+                    meesho_code=life_m_code if 'life_m_code' in locals() else "",
+                    affiliate_link=life_m_link if 'life_m_link' in locals() else "",
+                    api_key=env_key
+                )
+
+                if res_vlog.startswith("⚠️") or res_vlog.startswith("Error"):
+                    st.error(res_vlog)
+                else:
+                    st.session_state["latest_lifestyle_package"] = res_vlog
+                    st.session_state["latest_lifestyle_vo_enabled"] = life_vo_toggle
+                    st.session_state["latest_lifestyle_affiliate"] = life_m_link if 'life_m_link' in locals() else ""
+                    st.toast("🎉 Fictional Lifestyle Vlog Production Package Ready!", icon="🌴")
+
+    # Display 9-Tab Lifestyle Results
+    if "latest_lifestyle_package" in st.session_state:
+        vlog_text = st.session_state["latest_lifestyle_package"]
+        vo_active = st.session_state.get("latest_lifestyle_vo_enabled", False)
+        vlog_aff = st.session_state.get("latest_lifestyle_affiliate", "")
+
+        st.markdown("---")
+        st.markdown("### 🎬 Production Suite: Fictional Lifestyle Vlog")
+        render_section_why_watch_next_summary("lifestyle", vlog_text, visual_mode=lifestyle_vmode)
+
+        # Parse sections with robust regex
+        parsed_tabs = parse_lifestyle_tabs(vlog_text)
+        tab1_txt = parsed_tabs.get("tab1", "")
+        tab2_txt = parsed_tabs.get("tab2", "")
+        tab3_txt = parsed_tabs.get("tab3", "")
+        tab4_txt = parsed_tabs.get("tab4", "")
+        tab5_txt = parsed_tabs.get("tab5", "")
+        tab6_txt = parsed_tabs.get("tab6", "")
+        tab7_txt = parsed_tabs.get("tab7", "")
+        tab8_txt = parsed_tabs.get("tab8", "")
+        tab9_txt = parsed_tabs.get("tab9", "")
+
+        lt1, lt2, lt3, lt4, lt5, lt6, lt7, lt8, lt9 = st.tabs([
+            "📖 Story & Blueprint",
+            "🎬 Scene Script",
+            "📐 Shot List",
+            "🤖 Google Flow Prompts",
+            "🎙️ Voice-Over",
+            "🟡 On-Screen Text",
+            "🎧 Sound Design",
+            "🚀 Instagram SEO",
+            "📊 Score & Export"
+        ])
+
+        with lt1:
+            st.markdown("#### 📖 Story & Curiosity Blueprint")
+            st.markdown(tab1_txt if tab1_txt else vlog_text[:1200])
+
+        with lt2:
+            st.markdown("#### 🎬 Final Scene-by-Scene Script")
+            st.markdown(tab2_txt if tab2_txt else "Full script available in overview.")
+
+        with lt3:
+            st.markdown("#### 📐 Visual Shot List & Camera Language")
+            st.markdown(tab3_txt if tab3_txt else "Shot list available in overview.")
+
+        with lt4:
+            st.markdown("#### 🤖 Copy-Ready Google Flow & Kling AI Prompts (With Embedded Spoken Voice-Over & Video Action)")
+            st.info("💡 Each prompt below includes the exact **Spoken Voice-Over dialogue**, **Video Scene Action**, character consistency locks, and biomechanical safety locks.")
+            
+            # Extract code blocks and display with scene metadata
+            lines = (tab4_txt if tab4_txt else vlog_text).splitlines()
+            in_p = False
+            cur_p = []
+            cnt = 0
+            for l in lines:
+                if "```text" in l or (l.strip() == "```" and in_p):
+                    if in_p:
+                        cnt += 1
+                        prompt_body = "\n".join(cur_p).strip()
+                        
+                        # Extract voiceover line if present
+                        vo_match = re.search(r'Voice-over:\s*["“]?([^"\n\r”]+)["”]?', prompt_body, re.I)
+                        vo_line = vo_match.group(1).strip() if vo_match else ""
+                        
+                        st.markdown(f"##### 🎬 Scene #{cnt}: Video Action & Voice-Over Prompt")
+                        if vo_line:
+                            st.markdown(f"""
+                            <div style="background:#fdf2f8; border-left:4px solid #ec4899; padding:0.6rem 0.9rem; border-radius:6px; margin-bottom:0.6rem;">
+                                <span style="font-weight:700; color:#be185d;">🎙️ Video Spoken Voice-Over:</span>
+                                <span style="color:#831843; font-style:italic;"> "{vo_line}"</span>
+                            </div>
+                            """, unsafe_allow_html=True)
+                        st.code(prompt_body, language="text")
+                        st.markdown("---")
+                        cur_p = []
+                        in_p = False
+                    else:
+                        in_p = True
+                elif in_p:
+                    cur_p.append(l)
+            if cnt == 0:
+                st.markdown(tab4_txt if tab4_txt else "Prompts are detailed in script above.")
+
+        with lt5:
+            st.markdown("#### 🎙️ Studio Voice-Over & Neural Audio Generator")
+            extracted_vo = extract_spoken_dialogue(tab5_txt if tab5_txt else (tab2_txt if tab2_txt else vlog_text))
+
+            if extracted_vo:
+                st.markdown(f"""
+                <div style="background:linear-gradient(135deg, #fdf4ff 0%, #fae8ff 100%); border:1.5px solid #f0abfc; border-radius:12px; padding:1.2rem; margin-bottom:1rem; box-shadow:0 2px 8px rgba(0,0,0,0.03);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem;">
+                        <span style="font-weight:700; color:#86198f; font-size:1.05rem;">🎙️ Master Spoken Voice-Over Script (1-Take Recording)</span>
+                        <span class="badge-pill badge-pink">Single-Take Fluent Voice</span>
+                    </div>
+                    <p style="font-size:0.95rem; color:#4c0519; line-height:1.6; font-style:italic; margin:0;">
+                        "{extracted_vo}"
+                    </p>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                render_voiceover_audio_studio(extracted_vo, key_prefix="lifestyle_vo")
+                st.markdown("---")
+                if tab5_txt:
+                    st.markdown(tab5_txt)
+            else:
+                st.warning("ℹ️ Currently no spoken voice-over dialogue found in this story (it may have been generated in Pure Silent Mode).")
+                col_vo_act1, col_vo_act2 = st.columns([1.5, 1])
+                with col_vo_act1:
+                    st.caption("Click below to instantly generate a high-retention spoken voice-over script & Swara Neural audio for this vlog:")
+                    if st.button("⚡ Generate Spoken Voice-Over Script Now", type="primary", key="btn_gen_vo_now"):
+                        with st.spinner("🎙️ Generating viral voice-over narration script..."):
+                            new_vo_script = generate_lifestyle_voiceover_narration(
+                                story_text=tab1_txt if tab1_txt else vlog_text[:1200],
+                                language=life_lang if 'life_lang' in locals() else "Hinglish",
+                                voice_style=life_vo_style if 'life_vo_style' in locals() else "Luxury & Calm",
+                                api_key=env_key
+                            )
+                            if new_vo_script:
+                                if "TAB 5" in vlog_text:
+                                    st.session_state["latest_lifestyle_package"] = re.sub(
+                                        r'#+\s*[^\n]*TAB\s*5[^\n]*\n[\s\S]*?(?=#+\s*[^\n]*TAB|\Z)',
+                                        f"## 🎙️ TAB 5 — VOICE-OVER STUDIO\n\n{new_vo_script}\n\n",
+                                        vlog_text
+                                    )
+                                else:
+                                    st.session_state["latest_lifestyle_package"] = vlog_text + f"\n\n## 🎙️ TAB 5 — VOICE-OVER STUDIO\n\n{new_vo_script}\n"
+                                st.session_state["latest_lifestyle_vo_enabled"] = True
+                                st.toast("🎉 Spoken Voice-Over script generated!", icon="🎙️")
+                                st.rerun()
+                            else:
+                                st.error("Unable to generate voice-over script. Please check Gemini API key.")
+                if tab5_txt:
+                    st.markdown(tab5_txt)
+
+        with lt6:
+            st.markdown("#### 🟡 On-Screen Text & Subtitle Overlays")
+            st.markdown(tab6_txt if tab6_txt else "On-screen text displayed in script above.")
+
+        with lt7:
+            st.markdown("#### 🎧 Sound Design & Ambient Sound Effects")
+            st.markdown(tab7_txt if tab7_txt else "Sound design blueprint displayed in script above.")
+
+        with lt8:
+            st.markdown("#### 🚀 Script-Linked Instagram & YouTube Shorts SEO Suite")
+            if tab8_txt:
+                st.markdown(tab8_txt)
+            render_script_linked_seo_studio(vlog_text, key_prefix="life_seo", affiliate_link=vlog_aff)
+
+        with lt9:
+            st.markdown("#### 📊 Quality & Retention Scorecard (0–100)")
+            st.markdown(tab9_txt if tab9_txt else "Retention analysis complete.")
+            st.markdown("---")
+            col_exp1, col_exp2 = st.columns(2)
+            with col_exp1:
+                st.download_button(
+                    "📥 Download Complete Production Package (.md)",
+                    data=vlog_text,
+                    file_name=f"lifestyle_vlog_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.md",
+                    mime="text/markdown",
+                    use_container_width=True,
+                    key="btn_dl_life_md"
+                )
+            with col_exp2:
+                life_srt_data = generate_srt_from_script(vlog_text)
+                st.download_button(
+                    "📥 Download Subtitles (.srt) for CapCut / Premiere",
+                    data=life_srt_data,
+                    file_name=f"lifestyle_vlog_subtitles_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.srt",
+                    mime="text/plain",
+                    use_container_width=True,
+                    key="btn_dl_life_srt",
+                    help="Drop directly into CapCut or Premiere to have timed subtitles on screen!"
+                )
+            st.text_area("Raw Production Package Content", value=vlog_text, height=350, key="life_raw_md_area")
+
+
 # Top Level Navigation State
 NAV_RADAR = "🔥 Trends Radar"
 NAV_URL_PROD = "👗 Product Photo"
 NAV_PROBLEM = "👠 Problem Stories"
 NAV_FASHION = "👗 Fashion Stylist"
 NAV_RUNWAY = "🚶‍♀️ Runway & 💃 Dance"
+NAV_LIFESTYLE = "🌴 Lifestyle Vlog"
 NAV_HAUL = "📦 Batch Haul (1-5)"
 NAV_STUDIO = "🎬 Studio Workspace"
 NAV_REMIX = "🔗 Remixer"
@@ -3621,6 +4828,8 @@ if "Radar" in st.session_state["active_nav_tab"] or "Trends" in st.session_state
     st.session_state["active_nav_tab"] = NAV_RADAR
 elif "Runway" in st.session_state["active_nav_tab"] or "Walk" in st.session_state["active_nav_tab"] or "Poses" in st.session_state["active_nav_tab"] or "Dance" in st.session_state["active_nav_tab"]:
     st.session_state["active_nav_tab"] = NAV_RUNWAY
+elif "Lifestyle" in st.session_state["active_nav_tab"] or "Vlog" in st.session_state["active_nav_tab"] or "🌴" in st.session_state["active_nav_tab"]:
+    st.session_state["active_nav_tab"] = NAV_LIFESTYLE
 elif "URL" in st.session_state["active_nav_tab"] or "Meesho" in st.session_state["active_nav_tab"] or "Product Photo" in st.session_state["active_nav_tab"] or "Photo to Video" in st.session_state["active_nav_tab"]:
     st.session_state["active_nav_tab"] = NAV_URL_PROD
 elif "Problem" in st.session_state["active_nav_tab"] or "Stories" in st.session_state["active_nav_tab"] or "Wardrobe" in st.session_state["active_nav_tab"] or "Hacks" in st.session_state["active_nav_tab"]:
@@ -3634,8 +4843,8 @@ elif "Remix" in st.session_state["active_nav_tab"]:
 elif "Studio" in st.session_state["active_nav_tab"] or "Director" in st.session_state["active_nav_tab"]:
     st.session_state["active_nav_tab"] = NAV_STUDIO
 
-# Render 8 prominent top navigation tab buttons
-col_n1, col_n2, col_n3, col_n4, col_n5, col_n6, col_n7, col_n8 = st.columns(8)
+# Render 9 prominent top navigation tab buttons
+col_n1, col_n2, col_n3, col_n4, col_n5, col_n6, col_n7, col_n8, col_n9 = st.columns(9)
 with col_n1:
     b_type = "primary" if st.session_state["active_nav_tab"] == NAV_RADAR else "secondary"
     if st.button(NAV_RADAR, use_container_width=True, type=b_type, key="top_nav_radar"):
@@ -3662,16 +4871,21 @@ with col_n5:
         st.session_state["active_nav_tab"] = NAV_RUNWAY
         st.rerun()
 with col_n6:
+    b_type = "primary" if st.session_state["active_nav_tab"] == NAV_LIFESTYLE else "secondary"
+    if st.button(NAV_LIFESTYLE, use_container_width=True, type=b_type, key="top_nav_lifestyle"):
+        st.session_state["active_nav_tab"] = NAV_LIFESTYLE
+        st.rerun()
+with col_n7:
     b_type = "primary" if st.session_state["active_nav_tab"] == NAV_HAUL else "secondary"
     if st.button(NAV_HAUL, use_container_width=True, type=b_type, key="top_nav_haul"):
         st.session_state["active_nav_tab"] = NAV_HAUL
         st.rerun()
-with col_n7:
+with col_n8:
     b_type = "primary" if st.session_state["active_nav_tab"] == NAV_STUDIO else "secondary"
     if st.button(NAV_STUDIO, use_container_width=True, type=b_type, key="top_nav_studio"):
         st.session_state["active_nav_tab"] = NAV_STUDIO
         st.rerun()
-with col_n8:
+with col_n9:
     b_type = "primary" if st.session_state["active_nav_tab"] == NAV_REMIX else "secondary"
     if st.button(NAV_REMIX, use_container_width=True, type=b_type, key="top_nav_remix"):
         st.session_state["active_nav_tab"] = NAV_REMIX
@@ -3683,6 +4897,7 @@ st.markdown("<div style='margin-bottom: 1rem;'></div>", unsafe_allow_html=True)
 # TAB 1: Daily Trends Radar
 # ---------------------------------------------------------
 if st.session_state["active_nav_tab"] == NAV_RADAR:
+    radar_vmode = render_studio_visual_attention_banner("Trends Radar", key_prefix="radar_va")
     ctx = get_seasonal_context()
     
     col_t_head, col_t_btn = st.columns([2.8, 1.2])
@@ -3846,6 +5061,7 @@ elif st.session_state["active_nav_tab"] == NAV_URL_PROD:
         </div>
     </div>
     """, unsafe_allow_html=True)
+    prod_vmode = render_studio_visual_attention_banner("Product Photo", key_prefix="prod_photo_va")
 
     col_u_left, col_u_right = st.columns([3.2, 2.0])
     
@@ -4008,7 +5224,7 @@ elif st.session_state["active_nav_tab"] == NAV_URL_PROD:
                             product_images=prod_bytes_for_script,
                             duration=u_dur,
                             language="Hinglish (Natural Indian Social Tone)",
-                            presentation_mode="🪄 Magic Transition (Casual in Sc.1 ➔ Snap/Spin into Try-On)",
+                            presentation_mode="👗 Direct Try-On (Complete Full Outfit from 00:00 - Universal Rule)",
                             voice_tone=u_tone,
                             category_hint=ext_data.get("category", "Ethnic Wear"),
                             price=ext_data.get("price", p_price_val),
@@ -4060,6 +5276,7 @@ elif st.session_state["active_nav_tab"] == NAV_URL_PROD:
         
         if "meesho_url_script" in st.session_state:
             url_script_text = st.session_state["meesho_url_script"]
+            render_section_why_watch_next_summary("product", url_script_text, visual_mode=prod_vmode)
             
             # 🪝 A/B Hook Battle Component
             render_ab_hook_battle(url_script_text, session_key="meesho_url_script", key_prefix="url_hook_battle")
@@ -4127,8 +5344,9 @@ elif st.session_state["active_nav_tab"] == NAV_URL_PROD:
 elif st.session_state["active_nav_tab"] == NAV_REMIX:
     st.markdown("### 🔗 Instagram Reel Reverse-Engineer & Smart Remixer")
     st.markdown("""
-    Paste any viral Instagram Reel link below. The AI will analyze its psychological hook, audio script pacing, and visual transitions, and then adapt them to create an original high-converting reel for your Meesho product!
+    Paste any viral Instagram Reel link below. The AI will analyze its psychological hook, audio script pacing, camera choreography, and reverse-engineer a 100% original, policy-safe remake script customized for your Meesho products!
     """)
+    remix_vmode = render_studio_visual_attention_banner("Reel Remixer", key_prefix="remix_va")
     
     col_r_url, col_r_btn = st.columns([3.5, 1])
     with col_r_url:
@@ -4219,6 +5437,7 @@ elif st.session_state["active_nav_tab"] == NAV_REMIX:
         r_info = st.session_state["remix_data"]
         st.markdown("---")
         st.markdown("#### 🎯 Active Reel Remix Reference")
+        render_section_why_watch_next_summary("remix", r_info.get("hook_text", "") + "\n" + r_info.get("description", ""), visual_mode=remix_vmode)
         
         c_r1, c_r2 = st.columns([2.5, 1])
         with c_r1:
@@ -4270,6 +5489,8 @@ elif st.session_state["active_nav_tab"] == NAV_STUDIO:
         cur_t = st.session_state["selected_trend"]
         st.info(f"🎯 **Active Trend Loaded:** `{cur_t['title']}` | Category: `{cur_t['category']}` | Format: `{cur_t['recommended_format']}`")
         
+    studio_vmode = render_studio_visual_attention_banner("Studio Workspace", key_prefix="studio_ws_va")
+
     st.markdown("#### 📸 Step 1: Visual References & Ground Truth Anchors")
     st.markdown("""
     <p style="font-size:0.86rem; color:#475569; margin-top:-0.4rem; margin-bottom:1rem;">
@@ -4497,6 +5718,7 @@ elif st.session_state["active_nav_tab"] == NAV_STUDIO:
             <span class="badge-pill badge-green">🛡️ Anti-Morphing Guardrails Active</span>
         </div>
         """, unsafe_allow_html=True)
+        render_section_why_watch_next_summary("studio", script_text, visual_mode=studio_vmode)
         
         # 🪝 A/B Hook Battle Component
         render_ab_hook_battle(script_text, session_key="latest_script", key_prefix="studio_hook_battle")
@@ -4594,6 +5816,7 @@ elif st.session_state["active_nav_tab"] == NAV_PROBLEM:
         </div>
     </div>
     """, unsafe_allow_html=True)
+    prob_vmode = render_studio_visual_attention_banner("Problem Stories", key_prefix="problem_va")
     
     problems_catalog = get_wardrobe_problems_catalog()
     all_categories = [
@@ -4780,8 +6003,8 @@ elif st.session_state["active_nav_tab"] == NAV_PROBLEM:
             <span class="badge-pill badge-green">🛡️ Anti-Morphing Guardrails Active</span>
         </div>
         """, unsafe_allow_html=True)
-        
         prob_sol_text = st.session_state["latest_problem_script"]
+        render_section_why_watch_next_summary("problem", prob_sol_text, visual_mode=prob_vmode)
         
         # 🪝 A/B Hook Battle Component
         render_ab_hook_battle(prob_sol_text, session_key="latest_problem_script", key_prefix="problem_hook_battle")
@@ -4851,6 +6074,7 @@ elif st.session_state["active_nav_tab"] == NAV_FASHION:
         </div>
     </div>
     """, unsafe_allow_html=True)
+    fashion_vmode = render_studio_visual_attention_banner("Fashion Stylist", key_prefix="fashion_va")
     
     fashion_pillars = get_fashion_pillars_config()
     aesthetics_data = fashion_pillars["aesthetics"]
@@ -5550,6 +6774,7 @@ elif st.session_state["active_nav_tab"] == NAV_FASHION:
         """, unsafe_allow_html=True)
         
         sol_text = st.session_state["latest_solver_script"]
+        render_section_why_watch_next_summary("stylist", sol_text, visual_mode=fashion_vmode)
         
         # 🎯 Influencer Retention & Critique Scorecard (/160 Pts)
         render_influencer_scorecard(sol_text)
@@ -5621,6 +6846,7 @@ elif st.session_state["active_nav_tab"] == NAV_FASHION:
 elif st.session_state["active_nav_tab"] == NAV_HAUL:
     st.markdown("### 📦 Batch Haul Studio (Top 1 to 5 Meesho Finds Under ₹500)")
     st.caption("AI-Powered Multi-Garment Roundup Reels • Snap Transitions • Continuous Unbroken Voice-Over • 3-Way A/B Hook Battle")
+    haul_vmode = render_studio_visual_attention_banner("Batch Haul", key_prefix="haul_va")
 
     sample_hauls = {
         "party": {
@@ -5856,6 +7082,7 @@ elif st.session_state["active_nav_tab"] == NAV_HAUL:
             <span class="badge-pill badge-green">🚀 Multi-Product SEO Linked</span>
         </div>
         """, unsafe_allow_html=True)
+        render_section_why_watch_next_summary("haul", haul_text, visual_mode=haul_vmode)
 
         # 1. A/B Hook Battle Component
         render_ab_hook_battle(haul_text, session_key="latest_haul_script", key_prefix="haul_hook_battle")
@@ -5919,6 +7146,7 @@ elif st.session_state["active_nav_tab"] == NAV_RUNWAY:
         "Choreograph cinematic female influencer runway catwalk struts or viral Instagram dance reels. "
         "Select between **Catwalk Posing & SFX** or **Viral Dance & Hook-Steps (synchronized with real trending songs and glitch-free Google Flow prompts)**."
     )
+    runway_vmode = render_studio_visual_attention_banner("Runway & Dance", key_prefix="runway_va")
 
     studio_choreo_mode = st.radio(
         "🎭 Select Studio Choreography Format",
@@ -6171,6 +7399,7 @@ elif st.session_state["active_nav_tab"] == NAV_RUNWAY:
 
         st.markdown("---")
         st.markdown("### 🎬 Production Package: Runway Walk & All-Women Poses")
+        render_section_why_watch_next_summary("dance", rw_script_text, visual_mode=runway_vmode)
 
         rw_tab1, rw_tab2, rw_tab3, rw_tab4, rw_tab5 = st.tabs([
             "🎬 5-Step Posing Script & SFX",
@@ -6543,6 +7772,7 @@ elif st.session_state["active_nav_tab"] == NAV_RUNWAY:
 
             st.markdown("---")
             st.markdown("### 🎬 Production Package: Viral Dance & Hook-Steps Reel")
+            render_section_why_watch_next_summary("dance", dance_script_text, visual_mode=runway_vmode)
 
             d_tab1, d_tab2, d_tab3, d_tab4, d_tab5 = st.tabs([
                 "💃 Dance Script & Beat-Drop Timeline",
@@ -6643,6 +7873,13 @@ elif st.session_state["active_nav_tab"] == NAV_RUNWAY:
                         help="Import directly into CapCut, InShot, or Premiere Pro to auto-sync subtitles on screen!"
                     )
                 st.text_area("Raw Markdown Content", value=dance_script_text, height=400, key="dance_raw_md_area")
+
+# ---------------------------------------------------------
+# TAB: 🌴 Fictional Lifestyle Vlog AI Agent
+# ---------------------------------------------------------
+elif st.session_state["active_nav_tab"] == NAV_LIFESTYLE:
+    render_lifestyle_vlog_studio()
+
 
 # ---------------------------------------------------------
 # Footer Information

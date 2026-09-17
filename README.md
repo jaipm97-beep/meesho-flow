@@ -43,6 +43,30 @@ A powerful Streamlit-based AI video production engine designed for fashion creat
 
 ---
 
+
+### 7. 🎬 AI Lifestyle Reel Story Director (Phase 2 Full Suite)
+- **4-Phase Narrative Progression**: Hook ➔ Goal ➔ Curiosity Question ➔ Open Loop ➔ Micro-Events ➔ Natural Conflict ➔ Surprise ➔ Payoff ➔ Rewatch Loop.
+- **Adaptive Duration Architecture**:
+  - **15s High-Velocity Hook (3 beats)**: Compressed fast cuts with high-status interrupt.
+  - **30s Standard Journey (4 beats)**: Balanced curiosity progression and mirror payoff.
+  - **60s Cinematic Atmosphere (5 beats)**: Expanded micro-events, detailed exploration, and scenic slow-motion twirl.
+- **Dynamic Multi-Idea Generation**: Powered by `gemini-3.5-flash-lite` for instant 1-2s generation with zero quota exhaustion. Every idea produces unique, tailored dialogue, visual actions, and story conflicts.
+- **5 Creative Story Angles Explorer**: Instant 1-click alternative perspectives (Curiosity Story, Experience Story, Surprise Story, Emotional Bestie Story, Ultra-Luxury Story).
+- **Subconscious Viewer Mind Simulator**: Predicts viewer psychology, unanswered questions, and boredom risks beat-by-beat.
+- **Anti-Boring Diagnostics & Auto-Optimizer**: Detects narrative stagnation and executes up to 3 automated refinement rounds.
+
+### 8. 🎯 Visual Attention Engine & Total Retention Intelligence
+- **11-Dimension Scorecard**: Hook Power, Curiosity Gap, Conflict Escalation, Sensory Immersion, Emotional Resonance, Drop-Risk Buffer, Micro-Event Frequency, Aesthetic Contrast, Value Payoff, Rewatch Mechanics, and Overall Viral Tier.
+- **Interactive Visual Attention Strip**: Timeline breakdown (00:00 to 00:30) identifying peak attention moments and drop-risk warnings.
+- **"Why Keep Watching?" Factor**: Explicit psychological retention hook attached to every visual beat.
+
+### 9. 🤖 Google Flow & Kling AI Prompts with 100% Creator Reference Lock
+- **Subject & Character Lock**: Explicitly references `CREATOR_REFERENCE (Image 1)` in the prompt, locking exact facial features, hairstyle, skin undertone, and body proportions.
+- **Background Isolation Engine**: Strips casual domestic/bedroom backgrounds from creator photos and places the subject exclusively inside dynamic, photorealistic Indian luxury settings (atrium, driveways, terraces, private lounges).
+- **Copy-Ready Code Blocks**: Each scene prompt is formatted in a dedicated code block with lip delivery lock, camera motion, and biomechanical negative prompts.
+
+---
+
 ## 🛠️ Deploy on Streamlit Community Cloud
 
 1. Fork or upload this repository to your GitHub.
